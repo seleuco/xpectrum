@@ -1,18 +1,65 @@
-gp2xpectrum v1.7.2 for GP2X ported by Hermes and continued by Metalbrain & Seleuco with patches by kounch & GnoStiC.
+iXpectrum v1.0 for Jailbroken iPhone & iPod Touch with firmware 3.1.2 by Seleuco (D.Valdeita)
+
+Based in gp2xpectrum v1.8 by Hermes and continued by Metalbrain & Seleuco & SplinterGU.
+
+iXpectrum is a ZX Spectrum emulator for Jailbroken iPhone & iPod Touch with the following features:
+
+- Full speed on iPhone 3G in landscape or portrait mode.
+- Portrait-Landscape auto rotation.
+- Accurate audio. 
+- Image smoothing & full screen with aspect ratio options.
+
+Also includes all features from gp2Xpectrum :) .
+
+The emulator includes the following great games with the permission of Jonathan Cauldwell:
+
+Egghead Round the Med
+Banger Management
+Albatrossity
+Christmas Cracker
+Kuiper Pursuit
+Battery's not Precluded
+
+there is also included the following games from the spanish's scene created by mojontwins:
+
+Cheril of the Bosque
+Lala Prologue
+Sgt. Helmet Zero
+
+"Lala Prologue" is just great. :)
 
 INSTALLING
 ----------
 
-You must decide where to put your spectrum games. By default, they'll be placed in directory roms/spectrum in your SD root, but you can place them in any other directory specified in the .ini file. This file must have the same name as the emulator. If you decide not to use the SD card, you may also put the complete path to the directory, starting from "/mnt" (e.g.: /mnt/nand/spectrum/roms ). You may also specify a path relative to emulator location, starting the path with "./", so if you want to place the games in subdirectory "games" inside the emulator directory, just put "./games" .
+Place your .z80, .sp, .tap, .tzx, .sna and .dsk in /var/mobile/Media/ROMs/iXpectrum/ 
 
-Spectrum games must be in this directory or in another directory within it (only one level). If this directory doesn't exists, the emulator will create it and, inside it, the /saves and /img directories will be created, too.
+To copy files to the iphone you can install SSH from Cydia and use a SFTP or SCP client.
+
+To use SSH after jailbreak, you can go up to Cydia and search for OpenSSH to find the package. Tap the Install button to install it on your iPhone. Once installed, restart your iPhone. You wont find an icon for SSH on the home screen. But after restart, the SSH tool will be automatically launched and listens for remote request in background.
+
+scp is a nice and powerful file copier for osx and linux, the best command we need to copy files between our pc and our iphone.  Just go to the terminal and type:
+
+scp /source/* -F root@ip:/var/mobile/Media/ROMs/iXpectrum/  (where ip is the WIFI iPhone IP)
+
+this copy is done via ssh to the ip of the phone.
+
+You can also use a rich GUI client like Filezilla to do a SFTP copy or maybe WinSCP if you prefer.
+
+IPHONE
+------
+
+Tap in the bottom left corner icon to change the following options:
+
+Keep Aspect Ratio. 'Enabled' keeps the aspect ratio in landscape mode; 'Disabled' will use all available screen.
+
+Smoothed screen. Enable to apply a image filter over the emulator screen.
 
 
 GAME FORMATS
 ------------
 
 Allows .z80, .sp, .tap, .tzx, .sna and .dsk (+3 disks) Spectrum formats. The files
-can be compressed in BZIP2 or ZIP (you'll be able to choose if there are several files
+can be compressed in BZIP2 (you'll be able to choose if there are several files
 with valid extensions inside the archive).
 You can load the save states (.sav) directly, too.
 
@@ -20,42 +67,33 @@ You can load the save states (.sav) directly, too.
 GAME SELECTION
 --------------
 
-Use the stick (UP/DOWN) to browse, L & R to move page and A or X to select.
-If you press START all files in the directory will be compressed with BZIP2, (except all 
-those files already in ZIP format).
+Use the stick (UP/DOWN) to browse, L & R to move page and B to select.
 
-Press SELECT to return to GP2X main menu (or Tape Browser).
+Press SELECT to return to the main menu (or Tape Browser).
 
 
 PLAYING A GAME
 --------------
 
-The emulator will works @ 140-185 Mhz speed (depends on frameskip & contention options), with mono or stereo sound
-between 11025-44100Hz. Both beeper and AY chip are supported.
+The emulator will works full speed in iPhone 3G in landscape or portrait mode (depends on frameskip & contention options), with mono or stereo sound between 11025-44100Hz. Both beeper and AY chip are supported.
 
 Button layout:
 
-Stick, A,B,X,Y,L,R -> programmable with the viryual keyboard. In joystick emulation A button is assigned as joy fire button.
-
--Vol+ -> adjust sound volume
+Stick, A,B,X,Y,L,R -> programmable with the virtual keyboard. In joystick emulation B button is assigned as joy fire button.
 
 SELECT -> access to the config menu
 
 START -> show the virtual keyboard
 
-PHOTO function: if enabled, L + SELECT makes a screenshot
-
 
 VIRTUAL KEYBOARD
 ----------------
 
-In the virtual keyboard, the buttons are disabled, except for L, R, Y and X.
+In the virtual keyboard, the buttons are disabled, except for L, R and B.
 
-The X button, press the key currently selected in the virtual keyboard
+The B button, press the key currently selected in the virtual keyboard
 
 Pressing START we can exit the virtual keyboard.
-
-Y button will press the currently selected key (as X) and exit the virtual keyboard at the same time (useful for initial menus).
 
 BUTTON PROGRAMMING:
 
@@ -66,19 +104,15 @@ SPECIAL FUNCTIONS:
 
 In the virtual keyboard, 5 special functions are included:
 
-RESET: by pressing X, a new submenu appears to select the Spectrum model you want to reset to. By default, the emulator resets to
-the 128K model. If a game in .tap or .tzx format, doesn't load in this mode, reset the enulator using the 48K model.
-To abort the operation, use Y button.
+RESET: by pressing B, a new submenu appears to select the Spectrum model you want to reset to. By default, the emulator resets to the 128K model. If a game in .tap or .tzx format, doesn't load in this mode, reset the enulator using the 48K model.
+To abort the operation, use X button.
 
-LOAD: if a game requires the 48K mode, push X in this option to get the LOAD "" spectrum command to load a game in .tap
+LOAD: if a game requires the 48K mode, push B in this option to get the LOAD "" spectrum command to load a game in .tap
 or .tzx format.
 
-KEYBOARD/JOYSTICKS: use this option to assign the GP2X's stick and buttons to spectrum keys or differents spectrum's joysticks interfaces.
+KEYBOARD/JOYSTICKS: use this option to assign the stick and buttons to spectrum keys or differents spectrum's joysticks interfaces.
 
-MKEY: this function "pressess" the keyboard sequence previously programmed like a simultaneously key press and then erase
-	all the programmed keys. To program the keys, go to the desired key and push A to add this key to the key program. Up to
-	up to 8 keys are supported. There is an alternative function. You can use B button instead A button to get Multikey 	programming, but with this method the multikey combination won't be erased (this is useful in e.g.: ABU SIMBEL
-	Profanation, where pushing the 'VICTOR' key combination you can get tricks)
+MKEY: this function "pressess" the keyboard sequence previously programmed like a simultaneously key press and then erase all the programmed keys. To program the keys, go to the desired key and push A to add this key to the key program. Up to up to 8 keys are supported. There is an alternative function. You can use B button instead A button to get Multikey programming, but with this method the multikey combination won't be erased (this is useful in e.g.: ABU SIMBEL Profanation, where pushing the 'VICTOR' key combination you can get tricks)
 
 TAPE: here we can access directly to the tape browser.
 
@@ -88,72 +122,74 @@ CONFIGURATION MENU
 
 In this menu, you can access several options:
 
-Load State -> loads the previously save state of a game
-Save Keyboard & Speed Profile -> saves the currently programmed keys and selected speeds for the current game. This way
-	you won't have to define controls or change speed again each time you load the same game.
+Load State -> loads the previously save state of a game 
+
+Save Keyboard -> saves the currently programmed keys for the current game. This way you won't have to define controls again each time you load the same game.
+
 Save State -> saves the state of a game
 
-Full Screen [ON/OFF] -> activate/deactivate the full screen mode.
-Wait VSYNC [ON/OFF] -> activate/deactivate the vertical retrace syncronization.
-Show FPS [ON/OFF] -> show/hide the current frames per second.
-Battery Icon [ON/OFF] (only on GP2X F100 model) -> show/hide the battery state icon (top right corner). In full screen mode,
-	the icon only appears when the level is low. In that case, the red led will always flash.
-POKE Manager-> shows the POKE menu (modification of spectrum memory values)
-Photo Mode [Enabled/Disabled] -> allows/disallows the hability to take screenshoots by pressing L+SELECT. The images will be
-	saved in /img/ directory.
-Sleep Mode-> Suspension mode that turn off the LCD and slows down the CPUs. Press L+SELECT to wake up.
-New +3 Disk (only appears while emulating the +3 model) -> Put a new formated +3 disc
-Use SIDE X for +3 Disk (only appears while emulating the +3 model) -> Side selector (for double side discs)
-Save +3 Disk (only appears while emulating the +3 model) -> Save the current disc in the directory /roms/spectrum/saves with a
-	new name (if you write new data in the disc, use this to save).
-FS [0/1], Contention [on/off] -> enable/disable frameskip and contended memory emulation. Each of the 4 available modes will
-	use a different CPU speed, that can be adjusted in case you want to reduce it to save battery or increase it because
-	a certain program needs more power. To change the speed in a mode, select it and use the volume buttons.
-Emulation Speed [25 to 175]% -> Allows you to change the orginal Spectrum speed, which can be useful to vary the difficulty of
-	games or to observe a detail more slowly. While this option is selected, the volume buttons will vary this speed, not
-	the CPU's.
+Spectrum Screen or Full Screen -> activate/deactivate the full screen mode.
 
-Sound Mute [OFF/High/Low] -> Allows reduction of sound gain, useful for the F200 GP2X model.
+Show FPS [on/off] -> show/hide the current frames per second.
+
+POKE Manager-> shows the POKE menu (modification of spectrum memory values)
+
+New +3 Disk (only appears while emulating the +3 model) -> Put a new formated +3 disc Use SIDE A for +3 Disk (only appears while emulating the +3 model) -> Side selector (for double side discs)
+
+Save +3 Disk (only appears while emulating the +3 model) -> Save the current disc in the directory /roms/spectrum/saves with a new name (if you write new data in the disc, use this to save).
+
+Frame Skip [on/off] -> Enable/disable frameskip.
+
+Contention [on/off] -> Enable/disable contended memory emulation.
+
+Emulation Speed [25 to 175]% -> Allows you to change the orginal Spectrum speed, which can be useful to vary the difficulty of games or to observe a detail more slowly. While this option is selected, the volume buttons will vary this speed, not the CPU's.
+
 Sound [OFF/Mono/Stereo Beeper/Stereo ABC AY/Stereo ALL] -> sets sound mode.
+
 Sound Rate [11025/22050/32000/44100] KHz -> sets the sound frecuency quality.
 
 Fast Loading [ON/OFF] -> enable/disable fast loading mode.
+
 Flash Loading [ON/OFF] -> enable/disable instant load of standard tape blocks.
+
 Edge Loading [ON/OFF] -> enable/disable edge detection mode that may accelerate non-standard tape blocks.
+
 Auto Tape Play/Stop [ON/OFF] -> enable/disable the tape autoplay/stop.
-Tape Browser -> Access the tape browser.
+
+Tape Browser -> access the tape browser.
 
 Exit from Game -> exit from the game to the game selection screen.
-Return to Game -> returns to the game (or press Y button).
 
+Return to Game -> returns to the game.
+
+Note: 
+
+If you want to load a game in high compability mode, or just as original spectrum did, disable Fast & Flash & Edge loading.
+
+If you still have problems loading the game, remember to reset to 48k mode.
 
 Tape Browser
 ------------
 
-Entering this menu, if a tape is inserted, we'll see the blocks inside the tape, and current block will be marked 
-	with an asterisk sign.
-Moving the joystick up and down we can select other blocks.
-Pressing A/X while the current block is selected we'll manually start or stop the tape.
-Pressing A/X while another block is selected, that block will become the current one.
-START will allow us to load a differnt tape (or even a snapshot).
-With SELECT we'll exit the Tape Browser.
+Entering this menu, if a tape is inserted, we'll see the blocks inside the tape, and current block will be marked with an asterisk sign.
 
+Moving the joystick up and down we can select other blocks. Pressing B while the current block is selected we'll manually start or stop the tape. Pressing B while another block is selected, that block will become the current one.
+
+START will allow us to load a differnt tape (or even a snapshot). With SELECT we'll exit the Tape Browser.
 
 POKE Manager
 ------------
 
 Entering in this menu, the .pok file of the game will be loaded (if it exists) and shows up to 5 poke options.
-You can edit them with A button and use them with X button. On exit, the .pok file will be stored in /saves/ directory.
+You can edit them with A button and use them with B button. On exit, the .pok file will be stored in /saves/ directory.
 
 POKE TITLE EDITOR:
 
-Poke's name editor, it allows up to 29 characters using the virtual keyboard. Pressing ENT in the virtual keyboard, you
-	access to value edition.
+Poke's name editor, it allows up to 29 characters using the virtual keyboard. Pressing ENT in the virtual keyboard, you access to value edition.
 
 POKE VALUE EDITOR:
 
-Poke's value editor, allows the edition up to 10 pokes which will be fixed by pushing X button in the Poke Manager.
-	Addresses under 16384 are ignored.
+Poke's value editor, allows the edition up to 10 pokes which will be fixed by pushing B button in the Poke Manager. Addresses under 16384 are ignored.
 
 
 Game formats and use:
@@ -175,15 +211,23 @@ I hope that you like this emulator. Enjoy ;)
 
 To many thank to OscarBraindeaD by the translation.
 
-
 Credits
 -------
+
+--> iXpectrum:
+
+* Seleuco: Main port emulator author.
+* ZodTTD: The emulator is based in his code and findings.
+* J.Valdeita.L:  Portrait skin art.
+
+--> gp2Xpectrum:
 
  This emulator is the result from the work of many people, which we'll mention here:
 * Main emulator authors are:
   - Hermes/PS2R: Did the original port for GP2X from GP32's fzx32.
   - Metalbrain: Many improvements, mainly on CPU, timings and screen emulation accuracy.
   - Seleuco: Many improvements, mainly on sound and tape support.
+  - SplinterGU: SDL code & improved the load screen.
 * The following people contributed with patches:
   - kounch: TV-out scale patch.
   - GnoStiC: USB joystick patch.
@@ -195,8 +239,7 @@ Credits
 * And last but not least, GP2Xpectrum has used code from many other open source projects, whose authors we should also name:
   - rlyeh (again): creator of fzx32 for the GP32 console.
   - Santiago Romero: creator of ASpectrum emulator, which was the base for fzx32.
-  - Philip Kendall, Darren Salt, Witold Filipczyk, Fredrick Meunier and Matan Ziv-Av: creators of FUSE emulator, where our sound code
-  	(and also some z80 emulation bits) comes from, and its companion library libspectrum (used to add TZX support).
+  - Philip Kendall, Darren Salt, Witold Filipczyk, Fredrick Meunier and Matan Ziv-Av: creators of FUSE emulator, where our sound code (and also some z80 emulation bits) comes from, and its companion library libspectrum (used to add TZX support).
   - James McKay: Creator of X128 emulator.
   - Ulrich Doewich: Creator of Caprice, an Amstrad CPC emulator, from which the code for the +3 disk unit was taken.
   - Sergey Bulba: Creator of the utility AY2SNA.
@@ -208,6 +251,19 @@ Credits
 
 History
 -------
+
+iXpectrum
+
+v.1.0 by Seleuco (2010/05/02)
+
+- iPhone & iPod Touch port based in ZodTTD MAME port.
+- added IO Remote Audio Unit for improved performance and low latency audio.
+- Landscape & Portrait mode autorotate.
+- Added option to enable\disable image smoothing. 
+- Added option to enable\disable keep aspect ratio in landscape mode.
+
+
+GP2Xpectrum
 
 V1.0 by Hermes/PS2R (2006/02/05)
 - Initial version
@@ -338,3 +394,15 @@ V1.7.1 by Seleuco & Metalbrain (2008/03/10)
 V1.7.2 by Metalbrain (2008/08/29)
 - No +3 reset when loading a .dsk file if we're already using that model. This makes possible to play multi-disk games.
 - Added USB keyboard support. 
+
+v1.8 by SplinterGU (2009)
+- Wiz & Linux port based on SDL.
+- Removed HW dependencies with GP2x (The best GP2X version is still 1.7.2)
+- Added game images in file manager.
+
+v.1.8.1 by Seleuco (2010/05/02)
+- Corrected a memory bug in file manager.
+- Added auto fullscreen off while is loading a tape.
+- Set default keys when load a new rom. Fixed some key mappings.
+- Some SDL refactoring to make it more portable.
+

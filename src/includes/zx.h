@@ -26,7 +26,8 @@ extern int   zx_pressed_play;
 
   extern const unsigned char teclas_fila[NUM_KEYB_KEYS][3] ;
 
-#define ZXKey(a) if(a>=0) fila[ teclas_fila[a][0] ][ teclas_fila[a][1] ] &= teclas_fila[a][2]
+#define ZXKey(a) if((a)>=0) fila[ teclas_fila[a][0] ][ teclas_fila[a][1] ] &= teclas_fila[a][2]
+
   extern  int fila[5][5];
 
   void ZX_Init(void);
@@ -34,11 +35,11 @@ extern int   zx_pressed_play;
   void ZX_Frame(int);
   void ZX_Patch_ROM(void);
   void ZX_Unpatch_ROM(void);
-  
+
 //internal:
 //  void ZX_PressPlay(void *start, void *end);
 //  void ZX_StopPlay(void);
-//  void ZX_SetModel(void); 
+//  void ZX_SetModel(void);
   void ZX_LoadGame(int preferred_model, unsigned long crc, int quick_if_possible);
 
 extern byte  kempston, fuller;

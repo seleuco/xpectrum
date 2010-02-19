@@ -202,7 +202,11 @@ int f,ret;
 if(cycles_per_frame!=-1)
    tsmax=cycles_per_frame;
    
+//printf("en sound init freq %d speed %d\n",mconfig.sound_freq,mconfig.speed_mode);
+
 sound_freq=(mconfig.sound_freq * 100)/ mconfig.speed_mode;
+
+//printf("en sound init calculado %d\n",sound_freq);
 
 int gain = 1;
 if(mconfig.sound_gain==0)
@@ -245,6 +249,7 @@ if(sound_buf==NULL)
 
 memset(sound_buf,0,sizeof(signed short)*sound_framesiz*sound_channels);
 
+//printf("--> tam buf en sound %d ",(sizeof(signed short)*sound_framesiz*sound_channels));
 
 if(tape_buf==NULL)
  tape_buf=(signed short *)malloc(sizeof(signed short)*sound_freq*2*sound_channels); //rly: *2 'cos I feel i need more room :)
@@ -787,7 +792,7 @@ if(ay_is_in_use)  sound_ay_overlay();  // evita la emulacion si el juego no usa 
 
 //Seleuco: Enviamos directamente el sonido al DSP. Es mejor que el hilo. Perfecta sincronizacion y no underruns. 
 
-gp2x_send_sound(sound_buf,sound_framesiz * sound_channels);
+sound_send(sound_buf,sound_framesiz * sound_channels);
  
 sound_oldpos[0]=sound_oldpos[1]=-1;
 sound_fillpos[0]=sound_fillpos[1]=0;

@@ -45,6 +45,7 @@ int speed_loading;
 int flash_loading;
 int edge_loading;
 int auto_loading;
+int cpu_freq;
 }
 MCONFIG;
 
