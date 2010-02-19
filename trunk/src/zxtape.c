@@ -23,8 +23,8 @@
 
 #include "shared.h"
 
-#include "mylibspectrum\libspectrum.h"
-#include "mylibspectrum\tape_block.h"
+#include "mylibspectrum/libspectrum.h"
+#include "mylibspectrum/tape_block.h"
 
 extern MCONFIG mconfig;
 

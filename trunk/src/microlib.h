@@ -21,79 +21,56 @@
 #ifndef __MICROLIB_H__
 #define __MICROLIB_H__
 
-#include <fcntl.h>
-#include <linux/fb.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <sys/soundcard.h>
-#include <unistd.h>
-#include <usbjoy.h>
+typedef struct _color{
+	unsigned char r;
+	unsigned char g;
+	unsigned char b;
+}color_t;
 
+typedef color_t palette_t[256] ;
 
-// usb joystick vars
-unsigned long ExKey;
-struct usbjoy * joys [4];
-struct usbjoy * joy;
-int num_of_joys;
+void set_palette(palette_t palette);
 
+unsigned long getTicks();
 
 // joystick defines
-#define  GP2X_UP               0x1         
-#define	 GP2X_LEFT             0x2         
-#define	 GP2X_DOWN             0x4    
-#define	 GP2X_RIGHT            0x8
 
-#define  GP2X_START           0x10   
-#define  GP2X_SELECT          0x20      
-#define  GP2X_L               0x40    
-#define  GP2X_R               0x80
+enum  { JOY_BUTTON_UP=(1<<0),
+        JOY_BUTTON_UPLEFT=(1<<1),
+        JOY_BUTTON_LEFT=(1<<2),
+        JOY_BUTTON_DOWNLEFT=(1<<3),
+        JOY_BUTTON_DOWN=(1<<4),
+        JOY_BUTTON_DOWNRIGHT=(1<<5),
+        JOY_BUTTON_RIGHT=(1<<6),
+        JOY_BUTTON_UPRIGHT=(1<<7),
+        JOY_BUTTON_MENU=(1<<8),
+        JOY_BUTTON_SELECT=(1<<9),
+        JOY_BUTTON_L=(1<<10),
+        JOY_BUTTON_R=(1<<11),
+        JOY_BUTTON_A=(1<<12),
+        JOY_BUTTON_B=(1<<13),
+        JOY_BUTTON_X=(1<<14),
+        JOY_BUTTON_Y=(1<<15),
+        JOY_BUTTON_VOLUP=(1<<16),
+        JOY_BUTTON_VOLDOWN=(1<<17),
+        JOY_BUTTON_CLICK=(1<<18) 
+      };
 
-#define  GP2X_A              0x100        
-#define  GP2X_B              0x200          
-#define  GP2X_X              0x400      
-#define  GP2X_Y              0x800
+long joystick_read();
 
-#define  GP2X_VOL_UP        0x1000           
-#define  GP2X_VOL_DOWN      0x2000 
-#define  GP2X_PUSH          0x4000
+// video
+extern char  *video_screen8;
 
-// frame buffer
-unsigned char  *gp2x_screen;
+void dump_video();
 
 //init,end, Seleuco
-void gp2x_init();
-void gp2x_end();
+void microlib_init();
+void microlib_end();
  
 //sound stuff, OSS, Seleuco.
-extern int            gp2x_open_sound(int rate, int bits, int stereo);
-extern int            gp2x_close_sound();
-extern void           gp2x_volume(int, int);
-
-//http://wiki.gp2x.org/wiki/Writing_to_the_framebuffer_device, Seleuco
-//framebuffer stuff
-extern void           gp2x_waitvsync(void);
-extern void           gp2x_flip(void);
-extern void           gp2x_noflip_buffering(void);
-
-//palette stuff, Seleuco
-//http://wiki.gp2x.org/wiki/Setting_the_8_bit_palette_from_Linux
-extern void           gp2x_set_palette_color (int, int, int, int);
-extern void           gp2x_set_palette(void);
-
-//scaling stuff-tv-out, kounch, Rlyeh & wiki
-//http://wiki.gp2x.org/wiki/TV-out_support
-extern void           gp2x_set_scaling(int, int);
-extern void			  gp2x_width_screen(int);
-
-//joystick stuff Seleuco,GnoStiC
-//http://wiki.gp2x.org/wiki/GPIO_Reference
-extern unsigned long  gp2x_joystick_poll(void);
-extern void           gp2x_usbjoy_update(void);
-
-//timer stuff, Seleuco
-extern unsigned long  gp2x_timer_poll(void);
+extern int            sound_open(int rate, int bits, int stereo);
+extern int            sound_close();
+extern void           sound_volume(int, int);
+extern int            sound_send(void *samples,int nsamples);
 
 #endif

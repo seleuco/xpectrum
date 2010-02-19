@@ -36,7 +36,7 @@
 
 #include "usbkeyb.h"
 
-int keyboard_fd = -1;
+static int keyboard_fd = -1;
 int keyboardmap[128];
 
 int CheckKeyboard(char * filePath)

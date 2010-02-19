@@ -1065,7 +1065,6 @@ void fdc_init(int a, int b)
 void fdc_motor(unsigned char on)
 {
  FDC.motor=on;
- set_battery_led(on!=0);
 }
 
    /*

@@ -57,7 +57,7 @@ int scan_convert[192] = {
    5<<5,13<<5,21<<5,29<<5,37<<5,45<<5,53<<5,61<<5,
    6<<5,14<<5,22<<5,30<<5,38<<5,46<<5,54<<5,62<<5,
    7<<5,15<<5,23<<5,31<<5,39<<5,47<<5,55<<5,63<<5,
-		   
+           
    64<<5,72<<5,80<<5,88<<5,96<<5,104<<5,112<<5,120<<5,
    65<<5,73<<5,81<<5,89<<5,97<<5,105<<5,113<<5,121<<5,
    66<<5,74<<5,82<<5,90<<5,98<<5,106<<5,114<<5,122<<5,
@@ -108,376 +108,498 @@ byte ToBeDrawn[6912*2];
 void
 JustRun(Z80Regs * regs, int do_skip)
 {
-
-int target_tstate, current_tstate,memindex,outindex,direccion,charx,chary,i,repeat;
-
-int scanl,x,startbytes,startattr;
-int idxout,idxmem,idxpage,border,page;
-volatile byte *gp32offset;
-register byte fg,bg,attr,bytevalue;
-
-outwrites=0;
-outwritetime[outwrites]=spectrumZ80->ICount;
-outwritevalue[outwrites++]=BorderColor;
-
-Z80Run_NC (spectrumZ80, 50 ); // Trying interruption
-
-target_tstate = ( model<ZX_128 ? TIMING_48+1 : TIMING_128+1 ) - 23 ; // 23=max execution time of uncontended instruction
-Z80Run_NCNI (spectrumZ80, target_tstate - (spectrumZ80->IPeriod - spectrumZ80->ICount) ); // upper border
-
-memwrites=0;
-pagewrites=0;
-if(!do_skip)
-	{
-	register byte *VRAM5,*VRAM7;
-	VRAM5   = (byte *)&RAM_pages[0x4000*5];
-	VRAM7    = (byte *)&RAM_pages[0x4000*7];
-       	memcpy(ToBeDrawn,VRAM5,6912);
-       	memcpy(ToBeDrawn+6912,VRAM7,6912);
-	pagewritetime[pagewrites]=spectrumZ80->ICount;
-	pagewritevalue[pagewrites++]=pagination_128 & 8;
-	page=pagination_128 & 8;
-	}
-target_tstate+=192*hwopt.ts_line+23;	// All screen
-if (mconfig.contention==1 && !(mconfig.speed_loading && tape_playing))
-	{
+    int target_tstate, current_tstate,memindex,outindex,direccion,charx,chary,i,repeat;
+    
+    int scanl,x,startbytes,startattr;
+    int idxout,idxmem,idxpage,border,page;
+    volatile byte *offset;
+    register byte fg,bg,attr,bytevalue;
+    
+    outwrites=0;
+    outwritetime[outwrites]=spectrumZ80->ICount;
+    outwritevalue[outwrites++]=BorderColor;
+    
+    Z80Run_NC (spectrumZ80, 50 ); // Trying interruption
+    
+    target_tstate = ( model<ZX_128 ? TIMING_48+1 : TIMING_128+1 ) - 23 ; // 23=max execution time of uncontended instruction
+    Z80Run_NCNI (spectrumZ80, target_tstate - (spectrumZ80->IPeriod - spectrumZ80->ICount) ); // upper border
+    
+    memwrites=0;
+    pagewrites=0;
+    if(!do_skip)
+    {
+        register byte *VRAM5,*VRAM7;
+        VRAM5   = (byte *)&RAM_pages[0x4000*5];
+        VRAM7   = (byte *)&RAM_pages[0x4000*7];
+        memcpy(ToBeDrawn,VRAM5,6912);
+        memcpy(ToBeDrawn+6912,VRAM7,6912);
+        pagewritetime[pagewrites]=spectrumZ80->ICount;
+        pagewritevalue[pagewrites++]=pagination_128 & 8;
+        page=pagination_128 & 8;
+    }
+    target_tstate+=192*hwopt.ts_line+23;    // All screen
+    if (mconfig.contention==1 && !(mconfig.speed_loading && tape_playing))
+    {
         Z80Run (spectrumZ80, target_tstate - (spectrumZ80->IPeriod - spectrumZ80->ICount) );
-	}
-else	{
-    	Z80Run_NCNI (spectrumZ80, target_tstate - (spectrumZ80->IPeriod - spectrumZ80->ICount) );
-	}
-pagewritetime[pagewrites]=spectrumZ80->ICount;
-memwritetime[memwrites]=spectrumZ80->ICount;
+    }
+    else    
+    {
+        Z80Run_NCNI (spectrumZ80, target_tstate - (spectrumZ80->IPeriod - spectrumZ80->ICount) );
+    }
+    pagewritetime[pagewrites]=spectrumZ80->ICount;
+    memwritetime[memwrites]=spectrumZ80->ICount;
+    
+    Z80Run_NCNI (spectrumZ80, spectrumZ80->ICount-73 ); // Lower border
+    
+    outwritetime[outwrites]=spectrumZ80->ICount;
+    
+    Z80Run_NC (spectrumZ80, spectrumZ80->ICount);       // End & Try interrupt?
+    
+    if(!do_skip)
+    {
+        if(!full_screen)
+        {
+            idxout=0;
+            idxpage=0;
+            idxmem=0;
+    
+            target_tstate = ( model<ZX_128 ? (TIMING_48 - 16) : (TIMING_128 - 16) ) - 24 * hwopt.ts_line ;
+            do  
+            {
+                border=outwritevalue[idxout];
+                idxout++;
+            }
+            while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY);
+            
+            offset=(byte *)Picture;
+    
+            for (scanl = 0; scanl < 24; scanl++)
+            {
+                for(x=0;x<40;x++)
+                {
+                    if((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
+                    {
+                        border=outwritevalue[idxout++];
+                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    target_tstate+=4;
+                }
+                target_tstate+=hwopt.ts_line-160;
+                while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
+                {
+                    border=outwritevalue[idxout++];
+                }
+            }
+    
+            for (scanl = 0; scanl < 192; scanl++)
+            {
+                startbytes=Pixeles[scanl];
+                startattr=Atributos[scanl];
+    
+                for(x=0;x<4;x++)
+                {
+                    if((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
+                    {
+                        border=outwritevalue[idxout++];
+                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    target_tstate+=4;
+                }
+                while((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
+                {
+                    page=864*pagewritevalue[idxpage++];
+                }
+                while((spectrumZ80->IPeriod - memwritetime[idxmem])  < target_tstate)
+                {
+                    ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
+                    idxmem++;
+                }
+                bytevalue=ToBeDrawn[startbytes+page];
+                attr=ToBeDrawn[startattr+page];
+                if(SpectrumFlashFlag)
+                {
+                    if(attr&0x80)
+                    {
+                        bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
+                    }
+                    else    
+                    {
+                        fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                    }
+                    *(offset++)=bytevalue & 0x80 ? fg : bg;
+                    *(offset++)=bytevalue & 0x40 ? fg : bg;
+                    *(offset++)=bytevalue & 0x20 ? fg : bg;
+                    *(offset++)=bytevalue & 0x10 ? fg : bg;
+                    *(offset++)=bytevalue & 0x8  ? fg : bg;
+                    *(offset++)=bytevalue & 0x4  ? fg : bg;
+                    *(offset++)=bytevalue & 0x2  ? fg : bg;
+                    *(offset++)=bytevalue & 0x1  ? fg : bg;
+                    target_tstate+=4;
+                    for(x=1;x<32;x++)
+                    {
+                        if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
+                        {
+                            ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
+                            idxmem++;
+                        }
+                        if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
+                        {
+                            page=864*pagewritevalue[idxpage++];
+                        }
+                        bytevalue=ToBeDrawn[startbytes+x+page];
+                        attr=ToBeDrawn[startattr+x+page];
+                        if(attr&0x80)
+                        {
+                            bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
+                        }
+                        else    
+                        {
+                            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                        }
+                        *(offset++)=bytevalue & 0x80 ? fg : bg;
+                        *(offset++)=bytevalue & 0x40 ? fg : bg;
+                        *(offset++)=bytevalue & 0x20 ? fg : bg;
+                        *(offset++)=bytevalue & 0x10 ? fg : bg;
+                        *(offset++)=bytevalue & 0x8  ? fg : bg;
+                        *(offset++)=bytevalue & 0x4  ? fg : bg;
+                        *(offset++)=bytevalue & 0x2  ? fg : bg;
+                        *(offset++)=bytevalue & 0x1  ? fg : bg;
+                        target_tstate+=4;
+                    }
+                }
+                else    
+                {
+                    fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                    *(offset++)=bytevalue & 0x80 ? fg : bg;
+                    *(offset++)=bytevalue & 0x40 ? fg : bg;
+                    *(offset++)=bytevalue & 0x20 ? fg : bg;
+                    *(offset++)=bytevalue & 0x10 ? fg : bg;
+                    *(offset++)=bytevalue & 0x8  ? fg : bg;
+                    *(offset++)=bytevalue & 0x4  ? fg : bg;
+                    *(offset++)=bytevalue & 0x2  ? fg : bg;
+                    *(offset++)=bytevalue & 0x1  ? fg : bg;
+                    target_tstate+=4;
+                    for(x=1;x<32;x++)
+                    {
+                        if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
+                        {
+                            ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
+                            idxmem++;
+                        }
+                        if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
+                        {
+                            page=864*pagewritevalue[idxpage++];
+                        }
+                        bytevalue=ToBeDrawn[Pixeles[scanl]+x+page];
+                        attr=ToBeDrawn[Atributos[scanl]+x+page];
+                        fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                        *(offset++)=bytevalue & 0x80 ? fg : bg;
+                        *(offset++)=bytevalue & 0x40 ? fg : bg;
+                        *(offset++)=bytevalue & 0x20 ? fg : bg;
+                        *(offset++)=bytevalue & 0x10 ? fg : bg;
+                        *(offset++)=bytevalue & 0x8  ? fg : bg;
+                        *(offset++)=bytevalue & 0x4  ? fg : bg;
+                        *(offset++)=bytevalue & 0x2  ? fg : bg;
+                        *(offset++)=bytevalue & 0x1  ? fg : bg;
+                        target_tstate+=4;
+                    }
+                }
+    
+                for(x=0;x<4;x++)
+                {
+                    while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
+                    {
+                        border=outwritevalue[idxout++];
+                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    target_tstate+=4;
+                }
+                target_tstate+=hwopt.ts_line-160;
+            }
+    
+            for (scanl = 0; scanl < 24; scanl++)
+            {
+                while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
+                {
+                    border=outwritevalue[idxout];
+                    idxout++;
+                }
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                target_tstate+=4;
+                for(x=1;x<40;x++)
+                {
+                    if((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
+                    {
+                        border=outwritevalue[idxout++];
+                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    target_tstate+=4;
+                }
+                target_tstate+=hwopt.ts_line-160;
+            }
+        }
+        else /* Full Screen */
+        {
+            int n;
 
-Z80Run_NCNI (spectrumZ80, spectrumZ80->ICount-73 ); // Lower border
+            idxpage=0;
+            idxmem=0;
+    
+            target_tstate = ( model<ZX_128 ? TIMING_48+1 : TIMING_128+1 );
+            offset=(byte *)Picture;
+            for (scanl = 0; scanl < 192; scanl++)
+            {
+                n = 0;
+                while ( n < 2 )
+                {
+                    startbytes=Pixeles[scanl];
+                    startattr=Atributos[scanl];
+                    if ( !n )
+                    {
+                        while((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
+                        {
+                            page=864*pagewritevalue[idxpage++];
+                        }
+                        while((spectrumZ80->IPeriod - memwritetime[idxmem])  < target_tstate)
+                        {
+                            ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
+                            idxmem++;
+                        }
+                    }
+                    bytevalue=ToBeDrawn[startbytes+page];
+                    attr=ToBeDrawn[startattr+page];
+                    if(SpectrumFlashFlag)
+                    {
+                        if(attr&0x80)
+                        {
+                            bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
+                        }
+                        else    
+                        {
+                            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                        }
+                        *(offset++)=bytevalue & 0x80 ? fg : bg;
+                        *(offset++)=bytevalue & 0x40 ? fg : bg;
+                        *(offset++)=bytevalue & 0x20 ? fg : bg;
+                        *(offset++)=bytevalue & 0x10 ? fg : bg;
+                        *(offset++)=bytevalue & 0x10 ? fg : bg;
+                        *(offset++)=bytevalue & 0x8  ? fg : bg;
+                        *(offset++)=bytevalue & 0x4  ? fg : bg;
+                        *(offset++)=bytevalue & 0x2  ? fg : bg;
+                        *(offset++)=bytevalue & 0x1  ? fg : bg;
+                        *(offset++)=bytevalue & 0x1  ? fg : bg;
+                        if ( !n ) target_tstate+=4;
+                        for(x=1;x<32;x++)
+                        {
+                            if ( !n )
+                            {
+                                if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
+                                {
+                                    ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
+                                    idxmem++;
+                                }
+                                if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
+                                {
+                                    page=864*pagewritevalue[idxpage++];
+                                }
+                            }
+                            bytevalue=ToBeDrawn[startbytes+x+page];
+                            attr=ToBeDrawn[startattr+x+page];
+                            if(attr&0x80)
+                            {
+                                bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
+                            }
+                            else    
+                            {
+                                fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                            }
+                            *(offset++)=bytevalue & 0x80 ? fg : bg;
+                            *(offset++)=bytevalue & 0x40 ? fg : bg;
+                            *(offset++)=bytevalue & 0x20 ? fg : bg;
+                            *(offset++)=bytevalue & 0x10 ? fg : bg;
+                            *(offset++)=bytevalue & 0x10 ? fg : bg;
+                            *(offset++)=bytevalue & 0x8  ? fg : bg;
+                            *(offset++)=bytevalue & 0x4  ? fg : bg;
+                            *(offset++)=bytevalue & 0x2  ? fg : bg;
+                            *(offset++)=bytevalue & 0x1  ? fg : bg;
+                            *(offset++)=bytevalue & 0x1  ? fg : bg;
+                            if ( !n ) target_tstate+=4;
+                        }
+                    }
+                    else    
+                    {
+                        fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                        *(offset++)=bytevalue & 0x80 ? fg : bg;
+                        *(offset++)=bytevalue & 0x40 ? fg : bg;
+                        *(offset++)=bytevalue & 0x20 ? fg : bg;
+                        *(offset++)=bytevalue & 0x10 ? fg : bg;
+                        *(offset++)=bytevalue & 0x10 ? fg : bg;
+                        *(offset++)=bytevalue & 0x8  ? fg : bg;
+                        *(offset++)=bytevalue & 0x4  ? fg : bg;
+                        *(offset++)=bytevalue & 0x2  ? fg : bg;
+                        *(offset++)=bytevalue & 0x1  ? fg : bg;
+                        *(offset++)=bytevalue & 0x1  ? fg : bg;
+                        if ( !n ) target_tstate+=4;
+                        for(x=1;x<32;x++)
+                        {
+                            if ( !n ) 
+                            {
+                                if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
+                                {
+                                    ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
+                                    idxmem++;
+                                }
+                                if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
+                                {
+                                    page=864*pagewritevalue[idxpage++];
+                                }
+                            }
+                            bytevalue=ToBeDrawn[startbytes+x+page];
+                            attr=ToBeDrawn[startattr+x+page];
+                            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+                            *(offset++)=bytevalue & 0x80 ? fg : bg;
+                            *(offset++)=bytevalue & 0x40 ? fg : bg;
+                            *(offset++)=bytevalue & 0x20 ? fg : bg;
+                            *(offset++)=bytevalue & 0x10 ? fg : bg;
+                            *(offset++)=bytevalue & 0x10 ? fg : bg;
+                            *(offset++)=bytevalue & 0x8  ? fg : bg;
+                            *(offset++)=bytevalue & 0x4  ? fg : bg;
+                            *(offset++)=bytevalue & 0x2  ? fg : bg;
+                            *(offset++)=bytevalue & 0x1  ? fg : bg;
+                            *(offset++)=bytevalue & 0x1  ? fg : bg;
+                            if ( !n ) target_tstate+=4;
+                        }
+                    }
+                    if ( !n ) target_tstate+=hwopt.ts_line-128;
 
-outwritetime[outwrites]=spectrumZ80->ICount;
+                    n++;
+                    if (!full_screen || (scanl % 4)) break;
+                }
+            }
+        }
+    }
+}
 
-Z80Run_NC (spectrumZ80, spectrumZ80->ICount);       // End & Try interrupt?
+/* ------------------------------------------------------------------*/
+/*  scale
+    0 = 100%
+    1 = 75%
+    2 = 50%
+    3 = 25%
+    
+    align    
+    0 = left
+    1 = middle
+    2 = right
+*/
 
-if(!do_skip)
-	{
-	if(!full_screen)
-		{
-		idxout=0;
-		idxpage=0;
-		idxmem=0;
+void DrawZXtoScreen(byte * target, byte * source, int scale, int align)
+{
+    int scanl,x,startbytes,startattr;
+    register byte fg,bg,attr,bytevalue;
+    int incr1, incr2;
+  
+    if ( scale < 0 || scale > 3 ) return;
+    
+    switch (scale)
+    {
+        case    0:
+                incr1 = 1;
+                incr2 = 0;
+                break;
 
-		target_tstate = ( model<ZX_128 ? (TIMING_48 - 16) : (TIMING_128 - 16) ) - 24 * hwopt.ts_line ;
-		do	{
-			border=outwritevalue[idxout];
-			idxout++;
-			}
-		while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY);
-		
-		gp32offset=(byte *)Picture;
+        case    1:
+                incr1 = 1;
+                incr2 = 2 * 32;
+                break;
 
-		for (scanl = 0; scanl < 24; scanl++)
-			{
-			for(x=0;x<40;x++)
-				{
-				if((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
-					{
-					border=outwritevalue[idxout++];
-					}
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				target_tstate+=4;
-				}
-			target_tstate+=hwopt.ts_line-160;
-			while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
-				{
-				border=outwritevalue[idxout++];
-				}
-			}
+        case    2:
+                incr1 = 2;
+                incr2 = 4 * 32;
+                break;
 
-		for (scanl = 0; scanl < 192; scanl++)
-			{
-			startbytes=Pixeles[scanl];
-			startattr=Atributos[scanl];
+        case    3:
+                incr1 = 4;
+                incr2 = 6 * 32;
+                break;
+    }
+    
+    switch ( align )
+    {
+        case    0:
+                target -= 24 ;
+                break;
 
-			for(x=0;x<4;x++)
-				{
-				if((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
-					{
-					border=outwritevalue[idxout++];
-					}
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				target_tstate+=4;
-				}
-			while((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
-				{
-				page=864*pagewritevalue[idxpage++];
-				}
-			while((spectrumZ80->IPeriod - memwritetime[idxmem])  < target_tstate)
-				{
-				ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
-				idxmem++;
-				}
-			bytevalue=ToBeDrawn[startbytes+page];
-			attr=ToBeDrawn[startattr+page];
-			if(SpectrumFlashFlag)
-				{
-				if(attr&0x80)
-			   		{
-   					bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-   					}
-  				else   	{
-	  				fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-  					}
-	 			*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-				target_tstate+=4;
-				for(x=1;x<32;x++)
-					{
-					if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
-						{
-						ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
-						idxmem++;
-						}
-					if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
-						{
-						page=864*pagewritevalue[idxpage++];
-						}
-					bytevalue=ToBeDrawn[startbytes+x+page];
-					attr=ToBeDrawn[startattr+x+page];
-					if(attr&0x80)
-				   		{
-   						bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-   						}
-  					else   	{
-		  				fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-  						}
-	  				*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-					target_tstate+=4;
- 					}
-				}
-			else	{
-				fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-	  			*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-				target_tstate+=4;
-				for(x=1;x<32;x++)
-					{
-					if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
-						{
-						ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
-						idxmem++;
-						}
-					if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
-						{
-						page=864*pagewritevalue[idxpage++];
-						}
-					bytevalue=ToBeDrawn[Pixeles[scanl]+x+page];
-					attr=ToBeDrawn[Atributos[scanl]+x+page];
-					fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-	  				*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-					target_tstate+=4;
- 					}
-				}
+        case    1:
+                target += ( incr2 ) / 2 ;
+                break;
 
-			for(x=0;x<4;x++)
-				{
-				while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
-					{
-					border=outwritevalue[idxout++];
-					}
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				target_tstate+=4;
-				}
-			target_tstate+=hwopt.ts_line-160;
-			}
+        case    2:
+                target += 320 - 32 - 8 - 256 * ( 4 - scale ) / 4 ;
+                break;
+    }
+    
+    target += 24 * 320;
+    for (scanl = 0; scanl < 192; scanl+=incr1)
+    {
+        if ( scale == 1 && !( scanl % 4 ) ) continue;
+        startbytes=Pixeles[scanl];
+        startattr=Atributos[scanl];
 
-		for (scanl = 0; scanl < 24; scanl++)
-			{
-			while((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
-				{
-				border=outwritevalue[idxout];
-				idxout++;
-				}
-			*(gp32offset++)=border;
-			*(gp32offset++)=border;
-			*(gp32offset++)=border;
-			*(gp32offset++)=border;
-			*(gp32offset++)=border;
-			*(gp32offset++)=border;
-			*(gp32offset++)=border;
-			*(gp32offset++)=border;
-			target_tstate+=4;
-			for(x=1;x<40;x++)
-				{
-				if((spectrumZ80->IPeriod - outwritetime[idxout])<target_tstate+BORDERDELAY)
-					{
-					border=outwritevalue[idxout++];
-					}
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				*(gp32offset++)=border;
-				target_tstate+=4;
-				}
-			target_tstate+=hwopt.ts_line-160;
-			}
-		}
-	else	{
-		idxpage=0;
-		idxmem=0;
+        target += 32; /* Skip left border */
 
-		target_tstate = ( model<ZX_128 ? TIMING_48+1 : TIMING_128+1 );
-		gp32offset=(byte *)Picture;
-		for (scanl = 0; scanl < 192; scanl++)
-			{
-			startbytes=Pixeles[scanl];
-			startattr=Atributos[scanl];
-			while((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
-				{
-				page=864*pagewritevalue[idxpage++];
-				}
-			while((spectrumZ80->IPeriod - memwritetime[idxmem])  < target_tstate)
-				{
-				ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
-				idxmem++;
-				}
-			bytevalue=ToBeDrawn[startbytes+page];
-			attr=ToBeDrawn[startattr+page];
-			if(SpectrumFlashFlag)
-				{
-				if(attr&0x80)
-			   		{
-   					bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-   					}
-  				else   	{
-	  				fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-  					}
-	 			*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-				target_tstate+=4;
-				for(x=1;x<32;x++)
-					{
-					if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
-						{
-						ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
-						idxmem++;
-						}
-					if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
-						{
-						page=864*pagewritevalue[idxpage++];
-						}
-					bytevalue=ToBeDrawn[startbytes+x+page];
-					attr=ToBeDrawn[startattr+x+page];
-					if(attr&0x80)
-				   		{
-   						bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-   						}
-  					else   	{
-		  				fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-  						}
-	  				*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-					target_tstate+=4;
- 					}
-				}
-			else	{
-				fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-	  			*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  				*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-				target_tstate+=4;
-				for(x=1;x<32;x++)
-					{
-					if((spectrumZ80->IPeriod - memwritetime[idxmem] ) < target_tstate)
-						{
-						ToBeDrawn[memwriteaddr[idxmem]]=memwritevalue[idxmem];
-						idxmem++;
-						}
-					if((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
-						{
-						page=864*pagewritevalue[idxpage++];
-						}
-					bytevalue=ToBeDrawn[startbytes+x+page];
-					attr=ToBeDrawn[startattr+x+page];
-					fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-	  				*(gp32offset++)=bytevalue & 0x80 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x40 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x20 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x10 ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x8  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x4  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x2  ? fg : bg;
-  					*(gp32offset++)=bytevalue & 0x1  ? fg : bg;
-					target_tstate+=4;
- 					}
-				}
-			target_tstate+=hwopt.ts_line-128;
-			gp32offset+=64;
-			}
-		}
-	}
+        for(x=0;x<32;x++)
+        {
+            bytevalue=source[Pixeles[scanl]+x];
+            attr=source[Atributos[scanl]+x];
+            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
+
+            *(target++)=bytevalue & 0x80 ? fg : bg;
+            if ( scale < 2  ) *(target++)=bytevalue & 0x40 ? fg : bg;
+            if ( scale < 3  ) *(target++)=bytevalue & 0x20 ? fg : bg;
+            if ( !scale     ) *(target++)=bytevalue & 0x10 ? fg : bg;
+            *(target++)=bytevalue & 0x8  ? fg : bg;
+            if ( scale < 2  ) *(target++)=bytevalue & 0x4  ? fg : bg;
+            if ( scale < 3  ) *(target++)=bytevalue & 0x2  ? fg : bg;
+            if ( !scale     ) *(target++)=bytevalue & 0x1  ? fg : bg;
+        }
+        target += incr2;
+
+        target += 32; /* Skip right border */
+    }
 }

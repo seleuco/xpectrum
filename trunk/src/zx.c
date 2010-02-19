@@ -1,4 +1,4 @@
-/* zx.c: 
+/* zx.c:
    Copyright (c) 2005-2008 rlyeh, Hermes/PS2R, Metalbrain, Philip Kendall
 
    This program is free software; you can redistribute it and/or modify
@@ -63,7 +63,7 @@
 //       0 tstates ula buffer
 //       000000000  sequence
 //       1 tstates border granularity
-//       no contended pages 
+//       no contended pages
 //       no contended FE port
 //       no emulate snow
 //       no emulate in FF
@@ -75,10 +75,9 @@ extern MCONFIG mconfig;
 
 byte inline Z80ReadMem(register word where);
 byte inline Z80ReadMem_notiming(register word where);
-extern void msg(char *s);
 extern scan_convert[];
 
-#define debugmsg(a,b) { char text[255]; sprintf(text,"%s = %04x",a,b); msg(text); }
+#define debugmsg(a,b) printf(text,"%s = %04x",a,b)
 
 
           byte cycles_delay[76000];
@@ -201,8 +200,8 @@ byte *MEMr[4]; //solid block of 16*4 = 64kb for reading
 byte *MEMw[4]; //solid block of 16*4 = 64kb for writing
 byte  MEMc[4]; //contended 16k block? 1/0
 byte  MEMs[4]; //screen 16k block? 1/0
-byte  GAME[1*1024*1024]; 
-byte  DSK[1*1024*1024]; 
+byte  GAME[1*1024*1024];
+byte  DSK[1*1024*1024];
 long GAME_size;   //game(s) workspace
 byte  RAM_dummy[16384*1];  //to emulate spectrum 16
 byte  ROM_dummy[16384*1];
@@ -257,7 +256,7 @@ initialize_48 (void)
   MEMw[3]=MEMr[3]=&RAM_pages[0x4000*7-3*0x4000]; MEMc[3]=0; MEMs[3]=0;
   MEMw[2]=MEMr[2]=&RAM_pages[0x4000*6-2*0x4000]; MEMc[2]=0; MEMs[2]=0;
   MEMw[1]=MEMr[1]=&RAM_pages[0x4000*5-1*0x4000]; MEMc[1]=1; MEMs[1]=1; //contended, screen 1
-  
+
   MEMr[0]=&ROM_pages[0x4000*0]; MEMc[0]=0; MEMs[0]=0;
   MEMw[0]=&ROM_dummy[0x4000*0];
 
@@ -276,7 +275,7 @@ initialize_128 (void)
 
   memcpy(&ROM_pages[0x4000*0],&spectrum_rom_128[0x4000*0],0x4000);
   memcpy(&ROM_pages[0x4000*1],&spectrum_rom_128[0x4000*1],0x4000);
-  
+
   memcpy(&hwopt, &hwopt_128, sizeof(tipo_hwopt));
 
   MEMw[3]=MEMr[3]=&RAM_pages[0x4000*0-3*0x4000]; MEMc[3]=0; MEMs[3]=0;
@@ -355,9 +354,9 @@ port_0x7ffd (byte value)
   //128:    check bit 4 : rom selection (ROM0/1 -> 0x0000-0x3FFF)
   //+2A/+3: check high bit of rom selection too (same as offset ROM selection to 0x8000) 1x0 101
   MEMr[0]=&ROM_pages[(value & 16 ? 0x4000 : 0 ) | ((pagination_plus2a & 5) == 4 ? 0x8000 : 0)];
-//MEMw[0]=MEMw[0];      
+//MEMw[0]=MEMw[0];
 
-      
+
   pagewritetime[pagewrites]=spectrumZ80->ICount;
   pagewritevalue[pagewrites++]=value&8;
 
@@ -424,7 +423,7 @@ port_0x1ffd (byte value)
   //bit 4: printer strobe
 }
 
-// control of port 0x2ffd (fdc in) 
+// control of port 0x2ffd (fdc in)
 byte port_0x2ffd_in (void)
 {
 return (model==ZX_PLUS3 ? fdc_read_status() : 0xFF);
@@ -479,9 +478,9 @@ port_0xfffd_in (void)
      register value and the port input. So, allow for this when
      reading R14... */
 
-  if( ay_current_reg == 14 ) 
+  if( ay_current_reg == 14 )
       return (ay_registers[7] & 0x40 ? 0xbf & ay_registers[14] : 0xbf);
-   
+
   /* R15 is simpler to do, as the 8912 lacks the second I/O port, and
      the input-mode input is always 0xff */
 
@@ -491,31 +490,6 @@ port_0xfffd_in (void)
   return ay_registers[ay_current_reg] & ay_registers_mask[ay_current_reg];
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*----------------------------------------------------------------*/
 extern void CreateVideoTables (void);
 
@@ -523,93 +497,55 @@ void CreateScreenTable (int);
 
 // byte *zx_bordercolour, zx_bordercolours[240]; //one per scanline
 
-//byte *zx_tapfile,*zx_tapfile_,*zx_tapfile_eof;  
+//byte *zx_tapfile,*zx_tapfile_,*zx_tapfile_eof;
 //int   zx_pressed_play=0;
 int   vram_touched=0;
 byte  mic_on,mic;
 
 // original:
-int zx_colours[17][3] = { 
-  {  0,   0,   0 }, 
-  {  0,   0, 192 }, 
-  {192,   0,   0 }, 
-  {192,   0, 192 }, 
-  {  0, 192,   0 }, 
-  {  0, 192, 192 }, 
-  {192, 192,   0 }, 
-  {192, 192, 192 }, 
-  {  0,   0,   0 }, 
-  {  0,   0, 255 }, 
-  {255,   0,   0 }, 
-  {255,   0, 255 }, 
-  {  0, 255,   0 }, 
-  {  0, 255, 255 }, 
-  {255, 255,   0 }, 
-  {255, 255, 255 }, 
-  {255,   0,   0 } 
-};
-
-
-#if 0
-
-// old:
 int zx_colours[17][3] = {
-  {   0,   0,   0},
-  {   0,   0, 205},
-  { 205,   0,   0},
-  { 205,   0, 205},
-  {   0, 205,   0},
-  {   0, 205, 205},
-  { 205, 205,   0},
-  { 212, 212, 212},
-  {   0,   0,   0},
-  {   0,   0, 255},
-  { 255,   0,   0},
-  { 255,   0, 255},
-  {   0, 255,   0},
-  {   0, 255, 255},
-  { 255, 255,   0},
-  { 255, 255, 255},
-  { 255,   0,   0}
+  {  0,   0,   0 }, /*  0 = black           */
+  {  0,   0, 192 }, /*  1 = blue            */
+  {192,   0,   0 }, /*  2 = red             */
+  {192,   0, 192 }, /*  3 = magenta         */
+  {  0, 192,   0 }, /*  4 = green           */
+  {  0, 192, 192 }, /*  5 = cyan            */
+  {192, 192,   0 }, /*  6 = yellow          */
+  {192, 192, 192 }, /*  7 = white           */
+  {  0,   0,   0 }, /*  8 = bright black    */
+  {  0,   0, 255 }, /*  9 = bright blue     */
+  {255,   0,   0 }, /* 10 = bright red      */
+  {255,   0, 255 }, /* 11 = bright magenta  */
+  {  0, 255,   0 }, /* 12 = bright green    */
+  {  0, 255, 255 }, /* 13 = bright cyan     */
+  {255, 255,   0 }, /* 14 = bright yellow   */
+  {255, 255, 255 }, /* 15 = bright white    */
+  {255,   0,   0 }  /* 16 = bright red      */
 };
-
-
-#endif
-
-
-
 
   int fila[5][5];
 
   const unsigned char teclas_fila[NUM_KEYB_KEYS][3] = {
-    {1, 2, 0xFE}, /* 0 */ {1, 1, 0xFE}, /* 1 */ {1, 1, 0xFD},	/* 2 */
-    {1, 1, 0xFB}, /* 3 */ {1, 1, 0xF7}, /* 4 */ {1, 1, 0xEF},	/* 5 */
-    {1, 2, 0xEF}, /* 6 */ {1, 2, 0xF7}, /* 7 */ {1, 2, 0xFB},	/* 8 */
-    {1, 2, 0xFD},		/* 9 */
-    {3, 1, 0xFE}, /* a */ {4, 2, 0xEF}, /* b */ {4, 1, 0xF7},	/* c */
-    {3, 1, 0xFB}, /* d */ {2, 1, 0xFB}, /* e */ {3, 1, 0xF7},	/* f */
-    {3, 1, 0xEF}, /* g */ {3, 2, 0xEF}, /* h */ {2, 2, 0xFB},	/* i */
-    {3, 2, 0xF7}, /* j */ {3, 2, 0xFB}, /* k */ {3, 2, 0xFD},	/* l */
-    {4, 2, 0xFB}, /* m */ {4, 2, 0xF7}, /* n */ {2, 2, 0xFD},	/* o */
-    {2, 2, 0xFE}, /* p */ {2, 1, 0xFE}, /* q */ {2, 1, 0xF7},	/* r */
-    {3, 1, 0xFD}, /* s */ {2, 1, 0xEF}, /* t */ {2, 2, 0xF7},	/* u */
-    {4, 1, 0xEF}, /* v */ {2, 1, 0xFD}, /* w */ {4, 1, 0xFB},	/* x */
-    {2, 2, 0xEF}, /* y */ {4, 1, 0xFD},	/* z */
+    {1, 2, 0xFE}, /* 0 */ {1, 1, 0xFE}, /* 1 */ {1, 1, 0xFD},   /* 2 */
+    {1, 1, 0xFB}, /* 3 */ {1, 1, 0xF7}, /* 4 */ {1, 1, 0xEF},   /* 5 */
+    {1, 2, 0xEF}, /* 6 */ {1, 2, 0xF7}, /* 7 */ {1, 2, 0xFB},   /* 8 */
+    {1, 2, 0xFD},               /* 9 */
+    {3, 1, 0xFE}, /* a */ {4, 2, 0xEF}, /* b */ {4, 1, 0xF7},   /* c */
+    {3, 1, 0xFB}, /* d */ {2, 1, 0xFB}, /* e */ {3, 1, 0xF7},   /* f */
+    {3, 1, 0xEF}, /* g */ {3, 2, 0xEF}, /* h */ {2, 2, 0xFB},   /* i */
+    {3, 2, 0xF7}, /* j */ {3, 2, 0xFB}, /* k */ {3, 2, 0xFD},   /* l */
+    {4, 2, 0xFB}, /* m */ {4, 2, 0xF7}, /* n */ {2, 2, 0xFD},   /* o */
+    {2, 2, 0xFE}, /* p */ {2, 1, 0xFE}, /* q */ {2, 1, 0xF7},   /* r */
+    {3, 1, 0xFD}, /* s */ {2, 1, 0xEF}, /* t */ {2, 2, 0xF7},   /* u */
+    {4, 1, 0xEF}, /* v */ {2, 1, 0xFD}, /* w */ {4, 1, 0xFB},   /* x */
+    {2, 2, 0xEF}, /* y */ {4, 1, 0xFD}, /* z */
     {4, 2, 0xFE}, /*SPACE*/
     {3, 2, 0xFE}, /*ENTER*/
     {4, 1, 0xFE}, /*RSHIFT*/ {4, 2, 0xFD}, /*ALT*/ {1, 2, 0xEF}, /*CTRL*/
   };
 
 
-
-
 int mouse_x,mouse_y,mouse_b;
-
-
-
-
-
-
 
 byte Z80InPort (register word port)
 {
@@ -619,75 +555,74 @@ byte Z80InPort (register word port)
   extern struct tipo_emuopt emuopt;
   extern tipo_hwopt hwopt;
   extern int v_border;
-  
+
   //Para que funcione bien tiene que procesar todos los OUT
-  loader_hook (spectrumZ80);  
- 
-  
+  loader_hook (spectrumZ80);
+
   /* kempston joystick */
-  
+
   if(!(port & (0xFF^0xDF))) //bit 5 low = reading kempston (as told pera putnik)
   {
    return kempston;
   }
-  
+
   //if(contended_mask & 4) //if +2a or +3 then apply (fixes fairlight games)
   {
    if (!(port & (0xFFFF^0x2FFD))) return port_0x2ffd_in();
-   if (!(port & (0xFFFF^0x3FFD))) return port_0x3ffd_in(); 
+   if (!(port & (0xFFFF^0x3FFD))) return port_0x3ffd_in();
   }
 
   if (!(port & (0xFFFF^0xFFFD))) return port_0xfffd_in();
 
   //falta fffd_in para fuller
- 
-  // fuller joystick 
+
+  // fuller joystick
   if (!(port & (0xFF^0x7F)))
   {
    return fuller;
   }
-  
+
   /* keyboard */
-  if (!(port & (0xFF^0xFE)))  
+  if (!(port & (0xFF^0xFE)))
     {
       code = 0xFF;
 
       if (!(port & 0x0100))
-	code &= fila[4][1];
+        code &= fila[4][1];
       if (!(port & 0x0200))
-	code &= fila[3][1];
+        code &= fila[3][1];
       if (!(port & 0x0400))
-	code &= fila[2][1];
+        code &= fila[2][1];
       if (!(port & 0x0800))
-	code &= fila[1][1];
+        code &= fila[1][1];
       if (!(port & 0x1000))
-	code &= fila[1][2];
+        code &= fila[1][2];
       if (!(port & 0x2000))
-	code &= fila[2][2];
+        code &= fila[2][2];
       if (!(port & 0x4000))
-	code &= fila[3][2];
+        code &= fila[3][2];
       if (!(port & 0x8000))
-	code &= fila[4][2];
+        code &= fila[4][2];
 
       /* la gunstick */
       #if 0
       if (!(port & 0x1000) && (emuopt.gunstick & GS_GUNSTICK) &&
-	  (emuopt.gunstick & GS_HAYMOUSE))
-	{
-	  /* disparo de la gunstick con el raton. */
-	  if (mouse_b & 1)
-	    code &= (0xFE);
-	  /* Miramos a ver si los atributos son blanco  */
-	  if ((mouse_x > 31) && (mouse_x < 287) &&
-	      (mouse_y > v_border) && (mouse_y < (192 + v_border)))
-	    {
-	      x = (mouse_x - 32) / 8;
-	      y = (mouse_y - 1 - v_border) / 8;
-	      valor = Z80ReadMem_notiming(0x5800 + 32 * y + x);
-	      if (((valor & 0x07) == 0x07) || ((valor & 0x38) == 0x38))
-		code &= 0xFB;
-	    }			// mouse x>....
-	}			// port & 0x1000
+          (emuopt.gunstick & GS_HAYMOUSE))
+        {
+          /* disparo de la gunstick con el raton. */
+          if (mouse_b & 1)
+            code &= (0xFE);
+          /* Miramos a ver si los atributos son blanco  */
+          if ((mouse_x > 31) && (mouse_x < 287) &&
+              (mouse_y > v_border) && (mouse_y < (192 + v_border)))
+            {
+              x = (mouse_x - 32) / 8;
+              y = (mouse_y - 1 - v_border) / 8;
+              valor = Z80ReadMem_notiming(0x5800 + 32 * y + x);
+              if (((valor & 0x07) == 0x07) || ((valor & 0x38) == 0x38))
+                code &= 0xFB;
+            }                   // mouse x>....
+        }                       // port & 0x1000
       #endif
 
       /*
@@ -700,9 +635,9 @@ byte Z80InPort (register word port)
        */
 
       code = code & 0xbf;
-      
-      code = code | (tape_microphone ? 0x40 : 0); 
-           
+
+      code = code | (tape_microphone ? 0x40 : 0);
+
       /*
       if(mic_on)
       {
@@ -749,9 +684,9 @@ void Z80OutPort (register word port, register byte value)
     {
     if(contended_mask & 4) //if +2a or +3 then apply (fixes fairlight games)
       {
-      if (!(port & (0xFFFF^0x1FFD)))   
+      if (!(port & (0xFFFF^0x1FFD)))
         { port_0x1ffd(value); return; }
-      if (!(port & (0xFFFF^0x3FFD)))   
+      if (!(port & (0xFFFF^0x3FFD)))
         { port_0x3ffd(value); return; }
       }
     if (!(port & (0xFFFF^0x7FFD)))   //ordenar de mayor a menor los puertos
@@ -759,17 +694,17 @@ void Z80OutPort (register word port, register byte value)
     if (!(port & (0xFFFF^0xBFFD)))
       { port_0xbffd(value); return; }
 //  if (!(port & (0xFFFF^0xFFFD))) {
-      port_0xfffd(value); return; 
+      port_0xfffd(value); return;
 //  }
     }
 */
 
   if(contended_mask & 4) //if +2a or +3 then apply (fixes fairlight games)
   {
-  if (!(port & (0xFFFF^0x1FFD)))   
+  if (!(port & (0xFFFF^0x1FFD)))
    { port_0x1ffd(value); return; }
 
-  if (!(port & (0xFFFF^0x3FFD)))   
+  if (!(port & (0xFFFF^0x3FFD)))
    { port_0x3ffd(value); return; }
   }
 
@@ -795,7 +730,7 @@ void Z80OutPort (register word port, register byte value)
   if (!(port & (0xFF^0xFE)))
     {
       BorderColor = (value & 0x07);
-      
+
       outwritetime[outwrites]=spectrumZ80->ICount;
       outwritevalue[outwrites++]=value & 0x07;
 
@@ -821,7 +756,7 @@ void Z80OutPort (register word port, register byte value)
       return;
     }
 
-                                    
+
 
 /*
   switch(port&0xff)
@@ -873,16 +808,16 @@ Z80Patch (register Z80Regs * regs)
    // x128: 1386 ||  1387
    // mia : 56c
    if(/*trap_rom_loading*/ tape_is_tape() && mconfig.flash_loading)
-   {          	
+   {
       // if (spectrumZ80->PC.W != 0x05f1)              return; //wrong trap addr
-      // if(!(pagination_128 & 16)) if(model>=ZX_128)  return; //wrong rom bank       
+      // if(!(pagination_128 & 16)) if(model>=ZX_128)  return; //wrong rom bank
 
       //if (spectrumZ80->PC.W == 0x056c || spectrumZ80->PC.W == 0x0112)
       // LoadTZX(regs);
-      {                               
+      {
           if(Tape_load(regs));
-		     POP(PC);//??
-		  // byte Z80InPort (register word port)
+                     POP(PC);//??
+                  // byte Z80InPort (register word port)
       }
 
       /*
@@ -890,14 +825,14 @@ Z80Patch (register Z80Regs * regs)
          Load_Tape(regs);
       */
    }
-   /* 
-   else//TAPE PLAY! 
+   /*
+   else//TAPE PLAY!
    {
-       //CUIDADO: 
+       //CUIDADO:
        tape_do_play(1);
    }
    */
-   
+
 }
 
 void inline
@@ -906,15 +841,15 @@ Z80WriteMem (register word where, register byte A)
 volatile word whereA;
 whereA=where>>14;
 if(MEMc[whereA])
-	{
-	spectrumZ80->ICount-=(cycles_delay[spectrumZ80->ICount]);
-	if(MEMs[whereA] && (Significance[where] < spectrumZ80->ICount))
-		{
-		memwriteaddr[memwrites]=(where%16384)+6912*(MEMs[whereA]-1);
-		memwritetime[memwrites]=spectrumZ80->ICount;
-		memwritevalue[memwrites++]=A;
-		}
-	}
+        {
+        spectrumZ80->ICount-=(cycles_delay[spectrumZ80->ICount]);
+        if(MEMs[whereA] && (Significance[where] < spectrumZ80->ICount))
+                {
+                memwriteaddr[memwrites]=(where%16384)+6912*(MEMs[whereA]-1);
+                memwritetime[memwrites]=spectrumZ80->ICount;
+                memwritevalue[memwrites++]=A;
+                }
+        }
 *((byte *)(MEMw[whereA]+(where)))=A;
 spectrumZ80->ICount-=3;
 }
@@ -980,13 +915,13 @@ void inline contend_read_byte_x2(void)
 volatile byte whereA;
 whereA=spectrumZ80->I>>6;
 if(MEMc[whereA])
-	{
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	}
-else	{
-	spectrumZ80->ICount-=2;
-	}
+        {
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        }
+else    {
+        spectrumZ80->ICount-=2;
+        }
 }
 
 void inline contend_read_byte_x7(void)
@@ -994,18 +929,18 @@ void inline contend_read_byte_x7(void)
 volatile byte whereA;
 whereA=spectrumZ80->I>>6;
 if(MEMc[whereA])
-	{
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	}
-else	{
-	spectrumZ80->ICount-=7;
-	}
+        {
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        }
+else    {
+        spectrumZ80->ICount-=7;
+        }
 }
 
 void inline contend_read_x5(word where)
@@ -1013,16 +948,16 @@ void inline contend_read_x5(word where)
 volatile word whereA;
 whereA=where>>14;
 if(MEMc[whereA])
-	{
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	}
-else	{
-	spectrumZ80->ICount-=5;
-	}
+        {
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        }
+else    {
+        spectrumZ80->ICount-=5;
+        }
 }
 
 void inline contend_read_x4(word where)
@@ -1030,15 +965,15 @@ void inline contend_read_x4(word where)
 volatile word whereA;
 whereA=where>>14;
 if(MEMc[whereA])
-	{
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	}
-else	{
-	spectrumZ80->ICount-=4;
-	}
+        {
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        }
+else    {
+        spectrumZ80->ICount-=4;
+        }
 }
 
 void inline contend_read_x2(word where)
@@ -1046,39 +981,39 @@ void inline contend_read_x2(word where)
 volatile word whereA;
 whereA=where>>14;
 if(MEMc[whereA])
-	{
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
-	}
-else	{
-	spectrumZ80->ICount-=2;
-	}
+        {
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);spectrumZ80->ICount--;
+        }
+else    {
+        spectrumZ80->ICount-=2;
+        }
 }
 
 void inline ula_contend_port_early(word port)
 {
 if((port & 0xc000)==0x4000)
-  	spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);
+        spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);
 spectrumZ80->ICount-=1;
 }
 
 void inline ula_contend_port_late(word port)
 {
 if((contended_mask!=4)&&((port & 0x0001) == 0))
-	{
-    	spectrumZ80->ICount-=(cycles_delay[spectrumZ80->ICount]); spectrumZ80->ICount-=3;
-  	}
-else 	{
-    	if( ( port & 0xc000 ) == 0x4000 ) 
-    		{
-      		spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;
-      		spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;
-      		spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;
-    		}
-	else 	{
-		spectrumZ80->ICount-=3;
-    		}
-  	}
+        {
+        spectrumZ80->ICount-=(cycles_delay[spectrumZ80->ICount]); spectrumZ80->ICount-=3;
+        }
+else    {
+        if( ( port & 0xc000 ) == 0x4000 )
+                {
+                spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;
+                spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;
+                spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;
+                }
+        else    {
+                spectrumZ80->ICount-=3;
+                }
+        }
 }
 
 /*----------------------------------------------------------------
@@ -1096,7 +1031,7 @@ void ZX_Init(void)
 void ZX_SetModel(void)
 {
 
- memset(RAM_dummy,0xFF,16384*1); 
+ memset(RAM_dummy,0xFF,16384*1);
  memset(ROM_dummy,0x00,16384*1);
 
  memset(RAM_pages,0x00,16384*16);
@@ -1145,14 +1080,14 @@ void ZX_Reset(int preffered_model)
  totalcycles=(model<ZX_128?69888:70908);
  switch(model)
  {
-  case ZX_128_USR0: 
-  case ZX_128:      
+  case ZX_128_USR0:
+  case ZX_128:
   case ZX_PLUS2:    irqtime=36;
                     break;
   default:          irqtime=32;
                     break;
  }
- 
+
   for(i=0;i<76000;i++) cycles_delay[i]=cycles_delay2[i]=floating_bus[i]=0;
 
  switch(model)
@@ -1189,7 +1124,7 @@ void ZX_Reset(int preffered_model)
     floating_bus[totalcycles-k+k2]=0x0000; cycles_delay2[totalcycles-k]=cycles_delay[totalcycles-k]=2; k++;
     floating_bus[totalcycles-k+k2]=0x0000; cycles_delay2[totalcycles-k]=cycles_delay[totalcycles-k]=1; k++;
     floating_bus[totalcycles-k+k2]=0x0000; cycles_delay2[totalcycles-k]=cycles_delay[totalcycles-k]=0; k++;
-    floating_bus[totalcycles-k+k2]=0x0000; cycles_delay2[totalcycles-k]=cycles_delay[totalcycles-k]=0; k++; 
+    floating_bus[totalcycles-k+k2]=0x0000; cycles_delay2[totalcycles-k]=cycles_delay[totalcycles-k]=0; k++;
 
    }
   }
@@ -1222,8 +1157,14 @@ void ZX_Reset(int preffered_model)
 // memset(zx_bordercolours,0,240);
 // zx_bordercolour=(byte *)&zx_bordercolours[0];
 
- fila[1][1] = fila[1][2] = fila[2][2] = fila[3][2] = fila[4][2] =
-    fila[4][1] = fila[3][1] = fila[2][1] = 0xFF;
+ fila[1][1] =
+ fila[1][2] =
+ fila[2][1] =
+ fila[2][2] =
+ fila[3][1] =
+ fila[3][2] =
+ fila[4][1] =
+ fila[4][2] = 0xFF;
 
 // zx_pressed_play=0;
 
@@ -1232,7 +1173,7 @@ void ZX_Reset(int preffered_model)
 
  vram_touched=1;
 
- memset(ay_registers,0,16); 
+ memset(ay_registers,0,16);
  ay_current_reg=0;
 
  //mic_on=0;
@@ -1240,13 +1181,13 @@ void ZX_Reset(int preffered_model)
 
  sound_init(0, model<ZX_128?69888:70908);
  sound_ay_reset();
- 
+
 
  fdc_init(0,0);
 
  if(mconfig.flash_loading)
     ZX_Patch_ROM();
-    
+
  Tape_rewind();
 }
 
@@ -1254,21 +1195,21 @@ void ZX_Patch_ROM(){
 // patch rom
 
 {
-	int i;
-	for(i=0;i<4;i++)
-	{
-	/*if(ROM_pages[0x4000*i+0x05f1]==219 && ROM_pages[0x4000*i+0x05f2]==254)
-		{
-	    ROM_pages[0x4000*i+0x05f1]=0xed;
-	    ROM_pages[0x4000*i+0x05f2]=63;
-		}
-		*/
-	if(ROM_pages[0x4000*i+0x562]==0xdb && ROM_pages[0x4000*i+0x563]==0xfe)
-		{
-	    ROM_pages[0x4000*i+0x562]=0xed;
-	    ROM_pages[0x4000*i+0x563]=0x3f;
-		}
-	}
+        int i;
+        for(i=0;i<4;i++)
+        {
+        /*if(ROM_pages[0x4000*i+0x05f1]==219 && ROM_pages[0x4000*i+0x05f2]==254)
+                {
+            ROM_pages[0x4000*i+0x05f1]=0xed;
+            ROM_pages[0x4000*i+0x05f2]=63;
+                }
+                */
+        if(ROM_pages[0x4000*i+0x562]==0xdb && ROM_pages[0x4000*i+0x563]==0xfe)
+                {
+            ROM_pages[0x4000*i+0x562]=0xed;
+            ROM_pages[0x4000*i+0x563]=0x3f;
+                }
+        }
 }
 
 /*i=1;
@@ -1278,16 +1219,16 @@ ROM_pages[0x4000*i+1379]=63;
 }
 
 void ZX_Unpatch_ROM(){
-	
+
   int i;
   for(i=0;i<4;i++)//unpatch rom so protecction loader schemes work
   {
-	 if(ROM_pages[0x4000*i+0x562]==0xed && ROM_pages[0x4000*i+0x563]==0x3f)
-	 {
-		 ROM_pages[0x4000*i+0x562]=0xdb;
-		 ROM_pages[0x4000*i+0x563]=0xfe;
+         if(ROM_pages[0x4000*i+0x562]==0xed && ROM_pages[0x4000*i+0x563]==0x3f)
+         {
+                 ROM_pages[0x4000*i+0x562]=0xdb;
+                 ROM_pages[0x4000*i+0x563]=0xfe;
      }
-  }	
+  }
 }
 
 void ZX_Frame(int do_skip)
@@ -1307,8 +1248,14 @@ void ZX_Frame(int do_skip)
 
  // zx_bordercolour=(byte *)&zx_bordercolours[0];
 
- fila[1][1] = fila[1][2] = fila[2][2] = fila[3][2] = fila[4][2] =
- fila[4][1] = fila[3][1] = fila[2][1] = 0xFF;
+ fila[1][1] =
+ fila[1][2] =
+ fila[2][1] =
+ fila[2][2] =
+ fila[3][1] =
+ fila[3][2] =
+ fila[4][1] =
+ fila[4][2] = 0xFF;
 
  kempston=0;
  fuller=0xff;
@@ -1318,7 +1265,7 @@ void ZX_Frame(int do_skip)
 void ZX_LoadGame(int preferred_model, unsigned long crc, int quick)
 {
  if(preferred_model!=-1)
-   ZX_Reset(preferred_model); 
+   ZX_Reset(preferred_model);
  Tape_close();
 
  tape_format=0;
@@ -1331,7 +1278,7 @@ void ZX_LoadGame(int preferred_model, unsigned long crc, int quick)
 
   if(read_ay_file(spectrumZ80,GAME,GAME_size))
    play_track(spectrumZ80, 0);
-  else msg("ay read error!");
+  else printf("ay read error!");
 
   //trap_rom_loading=0;
  }
@@ -1340,7 +1287,7 @@ void ZX_LoadGame(int preferred_model, unsigned long crc, int quick)
  GAME[5]=='e'&&GAME[6]=='!'&&GAME[7]==26)
  {
     Tape_init(GAME,GAME_size);
-    tape_format=1; 
+    tape_format=1;
  }
  else
  if(GAME[0]==0x13&&GAME[1]==0&&GAME[2]==0)
@@ -1373,8 +1320,8 @@ void ZX_LoadGame(int preferred_model, unsigned long crc, int quick)
  GAME[5]=='C'&&GAME[6]=='P'&&GAME[7]=='C')
  {
   if(model!=ZX_PLUS3)
-  	ZX_Reset(ZX_PLUS3);
-  //LoadZ80(spectrumZ80, load_plus3_disk, load_128_usr0); 
+        ZX_Reset(ZX_PLUS3);
+  //LoadZ80(spectrumZ80, load_plus3_disk, load_128_usr0);
   memcpy(DSK,GAME,GAME_size);
   dsk_load((void *)DSK);
  }
@@ -1382,14 +1329,14 @@ void ZX_LoadGame(int preferred_model, unsigned long crc, int quick)
  GAME[5]=='D'&&GAME[6]=='E'&&GAME[7]=='D')
  {
   if(model!=ZX_PLUS3)
-  	ZX_Reset(ZX_PLUS3);
-   //LoadZ80(spectrumZ80, load_plus3_disk, load_128_usr0); 
+        ZX_Reset(ZX_PLUS3);
+   //LoadZ80(spectrumZ80, load_plus3_disk, load_128_usr0);
    memcpy(DSK,GAME,GAME_size);
    dsk_load((void *) DSK);
  }
  else
  {
-   LoadZ80(spectrumZ80,GAME,&GAME[GAME_size]); 
+   LoadZ80(spectrumZ80,GAME,&GAME[GAME_size]);
  }
 
  //exceptions
@@ -1406,14 +1353,14 @@ void ZX_LoadGame(int preferred_model, unsigned long crc, int quick)
 
  if(tape_format) //if any tape inserted...
  {
-    //ZX_Reset(model);  
+    //ZX_Reset(model);
  }
  else //putting a dummy tape fixes my donkey kong snap
  {
     tape_format=2;
-    Tape_init(GAME,GAME_size); 
+    Tape_init(GAME,GAME_size);
  }
- 
+
 }
 
 
@@ -1476,7 +1423,7 @@ void ZX_LoadGame(int preferred_model, unsigned long crc, int quick)
                                                            \
   TRANSIT(&pagination_128,1);                              \
                                                            \
-  TRANSIT(&BorderColor,1);                                 
+  TRANSIT(&BorderColor,1);
 
 
 
@@ -1490,12 +1437,12 @@ int ZX_SaveState(void *memx)
   {
    case ZX_16       : nRAM_pages=1; break;
    case ZX_48       : nRAM_pages=3; break;
-   case ZX_128      : 
+   case ZX_128      :
    case ZX_128_USR0 :
    case ZX_PLUS2    :
    case ZX_PLUS2A   :
    case ZX_PLUS3    : nRAM_pages=8; break;
-  }                       
+  }
 
   BLOCK(1); //saving
 
@@ -1527,48 +1474,48 @@ void CreateScreenTable(int model)
 int x,y,start,pause,memoryadd,timing,repeat;
 memoryadd=0;
 for( y=0; y<65536; y++)
-	{
-    	Significance[y] = 72000;
-   	}
+        {
+        Significance[y] = 72000;
+        }
 switch(model)
- 	{
- 	case ZX_16:
- 	case ZX_48:
- 		start=69888-TIMING_48;
-		pause=96;
-		repeat=0;
-		break;
- 	case ZX_128:
-	case ZX_128_USR0:
- 	case ZX_PLUS2:
-	case ZX_PLUS2A:
-	case ZX_PLUS3:
- 		start=70908-TIMING_128;
-		pause=100;
-		repeat=32768;
-		break;
-	}
+        {
+        case ZX_16:
+        case ZX_48:
+                start=69888-TIMING_48;
+                pause=96;
+                repeat=0;
+                break;
+        case ZX_128:
+        case ZX_128_USR0:
+        case ZX_PLUS2:
+        case ZX_PLUS2A:
+        case ZX_PLUS3:
+                start=70908-TIMING_128;
+                pause=100;
+                repeat=32768;
+                break;
+        }
 timing=start;
 for(y=0;y<192;y++)
-	{
-	memoryadd=16384+scan_convert[y];
-	for(x=0;x<32;x++)
-		{
-		Significance[memoryadd+repeat]=timing;
-		Significance[memoryadd++]=timing;
-		timing-=4;
-		}
-	timing-=pause;
-	}
+        {
+        memoryadd=16384+scan_convert[y];
+        for(x=0;x<32;x++)
+                {
+                Significance[memoryadd+repeat]=timing;
+                Significance[memoryadd++]=timing;
+                timing-=4;
+                }
+        timing-=pause;
+        }
 timing=start-7*(pause+128);
 for(y=0;y<24;y++)
-	{
-	for(x=0;x<32;x++)
-		{
-		Significance[memoryadd+repeat]=timing;
-		Significance[memoryadd++]=timing;
-		timing-=4;
-		}
-	timing-=(pause+128)*7+pause;
-	}
+        {
+        for(x=0;x<32;x++)
+                {
+                Significance[memoryadd+repeat]=timing;
+                Significance[memoryadd++]=timing;
+                timing-=4;
+                }
+        timing-=(pause+128)*7+pause;
+        }
 }
