@@ -1,5 +1,5 @@
 /* zx.c:
-   Copyright (c) 2005-2008 rlyeh, Hermes/PS2R, Metalbrain, Philip Kendall
+   Copyright (c) 2005-2010 rlyeh, Hermes/PS2R, Metalbrain, Seleuco, Philip Kendall
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -80,8 +80,8 @@ extern scan_convert[];
 #define debugmsg(a,b) printf(text,"%s = %04x",a,b)
 
 
-          byte cycles_delay[76000];
-          byte cycles_delay2[76000];
+byte cycles_delay[76000];
+byte cycles_delay2[76000];
 unsigned short floating_bus[76000];
 
 // *** NEW VIDEO VARIABLES ***
@@ -547,6 +547,56 @@ int zx_colours[17][3] = {
 
 int mouse_x,mouse_y,mouse_b;
 
+// uplus stuff
+byte zx_ula64_enabled = 0;
+byte zx_ula64_palette[64];
+byte ula64_reg = 0;
+byte zx_palette_change = 0;
+
+// control of port 0x3ffd
+
+//Spec SE 64 colour mode palette registerport write sets the current palette register.
+//0 to 63 for palette entries GGGRRRBB
+//64 for palette mode 0 -> normal mode, 1 -> 64 colour mode
+void port_0xbf3b (byte value)
+{
+	ula64_reg  = value;
+}
+
+//ula64 colour mode palette registerport read Returns the current palette register
+byte port_0xbf3b_in (void)
+{
+    return ula64_reg;
+}
+
+// control of port 0xff3b
+
+// ula64  palette dataport writte
+void port_0xff3b (byte value)
+{
+   if (ula64_reg <= 63 ){
+      zx_ula64_palette[ula64_reg] = value;
+      zx_palette_change = 1;
+   } else if (ula64_reg == 64 ){
+      zx_ula64_enabled = value & 0x01;
+      zx_palette_change = 1;
+   }
+}
+
+// ula64  palette dataport read
+byte port_0xff3b_in (void)
+{
+   if (ula64_reg <= 63 )
+   {
+        return (zx_ula64_palette[ula64_reg] );
+   }
+   if (ula64_reg == 64 ){
+	return (zx_ula64_enabled);
+   } else {
+	return(255);
+   }
+}
+
 byte Z80InPort (register word port)
 {
   int code=255;
@@ -564,6 +614,13 @@ byte Z80InPort (register word port)
   if(!(port & (0xFF^0xDF))) //bit 5 low = reading kempston (as told pera putnik)
   {
    return kempston;
+  }
+
+  //ula64
+  if(mconfig.ula64!=0)
+  {
+     if (!(port & (0xFFFF^0xbf3b))) return port_0xbf3b_in();
+     if (!(port & (0xFFFF^0xff3b))) return port_0xff3b_in();
   }
 
   //if(contended_mask & 4) //if +2a or +3 then apply (fixes fairlight games)
@@ -711,8 +768,22 @@ void Z80OutPort (register word port, register byte value)
   if (!(port & (0xFFFF^0x7FFD)))   //ordenar de mayor a menor los puertos
    { port_0x7ffd(value); return; }
 
+  //ula64
+  if(mconfig.ula64!=0)
+  {
+    if (!(port & (0xFFFF^0xbf3b)))
+       { port_0xbf3b(value); return; }
+  }
+
   if (!(port & (0xFFFF^0xBFFD)))
    { port_0xbffd(value); return; }
+
+  //ula64
+  if(mconfig.ula64!=0)
+  {
+     if (!(port & (0xFFFF^0xff3b)) )
+        { port_0xff3b(value); return; }
+  }
 
   if (!(port & (0xFFFF^0xFFFD)))
    { port_0xfffd(value); return; }
@@ -775,7 +846,7 @@ void Z80OutPort (register word port, register byte value)
 void
 Z80Patch (register Z80Regs * regs)
 {
-  // address contributed by Ignacio Burgueño :)
+  // address contributed by Ignacio Burgueï¿½o :)
 #undef POP
 #define POP(rreg)\
   regs->rreg.B.l = Z80ReadMem(regs->SP.W); regs->SP.W++;\
@@ -1073,6 +1144,8 @@ void ZX_Reset(int preffered_model)
 {
  int i,j,k,k2,totalcycles,irqtime;
 
+
+
  if(preffered_model!=-1) model=preffered_model;
 
  ZX_SetModel();
@@ -1189,6 +1262,12 @@ void ZX_Reset(int preffered_model)
     ZX_Patch_ROM();
 
  Tape_rewind();
+ if(mconfig.ula64==0 || mconfig.ula64==1)
+ {
+     zx_ula64_enabled = 0;
+     zx_palette_change = 1;
+ }
+
 }
 
 void ZX_Patch_ROM(){

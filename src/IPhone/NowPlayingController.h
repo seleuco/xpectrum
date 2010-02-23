@@ -29,6 +29,8 @@
 #import <unistd.h>
 #import <sys/time.h>
 
+#import "MagnifierView.h"
+
 struct myGSPathPoint {
 	char unk0;
 	char unk1;
@@ -165,10 +167,13 @@ typedef struct {
 @interface NowPlayingController : UIViewController <UIActionSheetDelegate> 
 {
 
-	UIView			* screenView;
-	UIWindow		* window;
-	UIImageView	    * controllerImageView;
+  UIWindow		* window;
+  UIView			* screenView;
+  UIImageView	    * imageView;
+  MagnifierView   *loop;
+  NSTimer *touchTimer;
 
+  //joy controller
   CGRect ButtonUp;
   CGRect ButtonLeft;
   CGRect ButtonDown;
@@ -192,21 +197,80 @@ typedef struct {
   CGRect LPad2;
   CGRect RPad2;
   CGRect Menu;
-	
-	
-	CoreSurfaceBufferRef			_screenSurface;
-	CALayer						*	screenLayer;
-	//NSTimer						*	timer;
+
+  CGRect rShowKeyboard;
+
+  //specy keyboard
+  CGRect rSPECKEY_1;
+  CGRect rSPECKEY_2;
+  CGRect rSPECKEY_3;
+  CGRect rSPECKEY_4;
+  CGRect rSPECKEY_5;
+  CGRect rSPECKEY_6;
+  CGRect rSPECKEY_7;
+  CGRect rSPECKEY_8;
+  CGRect rSPECKEY_9;
+  CGRect rSPECKEY_0;
+
+  CGRect rSPECKEY_Q;
+  CGRect rSPECKEY_W;
+  CGRect rSPECKEY_E;
+  CGRect rSPECKEY_R;
+  CGRect rSPECKEY_T;
+  CGRect rSPECKEY_Y;
+  CGRect rSPECKEY_U;
+  CGRect rSPECKEY_I;
+  CGRect rSPECKEY_O;
+  CGRect rSPECKEY_P;
+
+  CGRect rSPECKEY_A;
+  CGRect rSPECKEY_S;
+  CGRect rSPECKEY_D;
+  CGRect rSPECKEY_F;
+  CGRect rSPECKEY_G;
+  CGRect rSPECKEY_H;
+  CGRect rSPECKEY_J;
+  CGRect rSPECKEY_K;
+  CGRect rSPECKEY_L;
+  CGRect rSPECKEY_ENTER;
+
+  CGRect rSPECKEY_SHIFT;
+  CGRect rSPECKEY_SHIFT2;
+  CGRect rSPECKEY_Z;
+  CGRect rSPECKEY_X;
+  CGRect rSPECKEY_C;
+  CGRect rSPECKEY_V;
+  CGRect rSPECKEY_B;
+  CGRect rSPECKEY_N;
+  CGRect rSPECKEY_M;
+  CGRect rSPECKEY_SYMB;
+  CGRect rSPECKEY_SYMB2;
+  CGRect rSPECKEY_SPACE;
+
+  CGRect rShowController;
+  CGRect rHideKeyboard;
+  CGRect rHideKeyboard2;
+
+  CoreSurfaceBufferRef			_screenSurface;
+  CALayer						    *screenLayer;
+  //NSTimer						*	timer;
 }
 
 - (void)getControllerCoords:(int)orientation;
+- (void)getKeyboardCoords:(int)orientation;
 //- (void)mouseEvent:(myGSEvent*)event;
 
 - (void)startEmu:(char*)path;
 - (void)runMenu;
 - (void)runMainMenu;
+- (void)buildPortraitImageView;
 - (void)buildPortrait;
+- (void)buildLandscapeImageView;
 - (void)buildLandscape;
-
+- (void)showKey:(CGRect)rect;
+- (void)hideKey;
+- (void) handleAction:(id)timerObj;
+- (void)touchesKeyboard:(NSSet *)touches withEvent:(UIEvent *)event;
+- (void)touchesController:(NSSet *)touches withEvent:(UIEvent *)event;
 
 @end
