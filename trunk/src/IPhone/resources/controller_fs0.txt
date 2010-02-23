@@ -21,4 +21,5 @@
 0,0,0,0              //button up right Y + B
 75,0,75,40             //lpad2
 330,0,75,40             //rpad2
+150,0,175,50 //showkyboard
 25

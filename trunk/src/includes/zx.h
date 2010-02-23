@@ -10,6 +10,11 @@ extern int zx_colours[17][3];
 extern byte *zx_tapfile,*zx_tapfile_,*zx_tapfile_eof;
 extern int   zx_pressed_play;
 
+extern byte zx_palette_change;
+extern byte zx_ula64_enabled;
+extern byte zx_ula64_palette[64];
+
+
 #define NUM_KEYB_KEYS 256
 
   enum SpecKeys

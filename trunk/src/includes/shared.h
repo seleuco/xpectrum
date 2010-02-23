@@ -46,7 +46,16 @@ int flash_loading;
 int edge_loading;
 int auto_loading;
 int cpu_freq;
+int ula64;
 }
 MCONFIG;
 
 extern long cur_frame;
+extern int emulating;
+extern int ext_keyboard;
+#define MAX_KEYS 10
+extern int keyboardKeys[MAX_KEYS];
+extern int numKeys;
+extern int isShiftKey;
+extern int isSymbolKey;
+

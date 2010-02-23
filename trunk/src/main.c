@@ -61,6 +61,12 @@ char globalpath[247]="roms/";
 char actual_roms_dir[512] = "";
 
 long cur_frame;
+int keyboardKeys[MAX_KEYS];
+int numKeys = 0;
+int isShiftKey;
+int isSymbolKey;
+int emulating = 0;
+int ext_keyboard = 0;
 
 extern Z80Regs * spectrumZ80;
 extern void Sound_Loop();
@@ -105,6 +111,17 @@ int dsk_format ();
 #define DEFAULT_SPEED_NOFSNC 250
 #define DEFAULT_SPEED_FS1NC 250
 
+struct
+{
+    unsigned header;
+    int mJoystick;
+    int map_keys[16];
+    unsigned char filename[256];
+    int have_fd_info;
+    char ulaplus[8];
+    unsigned reserved[61];
+    //unsigned reserved[63];
+} state_header;
 
 
 extern unsigned char msx[];  // define la fuente externa usada para dibujar letras y numeros
@@ -132,22 +149,47 @@ void set_emupalette()
     int i;
     unsigned char r, g, b;
 
-
     palette_t palette;
 
     memset(palette,0,sizeof(palette_t));
 
-    for (i = 0; i < 17; i++)
+    if(!zx_ula64_enabled)
     {
-        palette[i].r = r = zx_colours[i][0];
-        palette[i].g = g = zx_colours[i][1];
-        palette[i].b = b = zx_colours[i][2];
+		for (i = 0; i < 17; i++)
+		{
+			palette[i].r = r = zx_colours[i][0];
+			palette[i].g = g = zx_colours[i][1];
+			palette[i].b = b = zx_colours[i][2];
 
-        palette[i+18].r = r >> 1;
-        palette[i+18].g = (g >> 2) | 64;
-        palette[i+18].b = b >> 1;
+			palette[i+18].r = r >> 1;
+			palette[i+18].g = (g >> 2) | 64;
+			palette[i+18].b = b >> 1;
 
+		}
     }
+    else
+    {
+		for (i = 0; i < 64; i++)
+		{
+
+	    	byte r = (zx_ula64_palette[i] & 0x1C ) >> 2;
+	    	byte g = (zx_ula64_palette[i] & 0xE0 ) >> 5;
+	    	byte b = ((zx_ula64_palette[i] & 0x03 ) << 1 ) | (zx_ula64_palette[i] & 0x01 );
+
+	    	r = ( r << 5 )+( r <<2 )+( r & 0x03 );
+	    	g = ( g << 5 )+( g <<2 )+( g & 0x03 );
+	    	b = ( b << 5 )+( b <<2 )+( b & 0x03 );
+
+	        palette[i].r =  r;
+	        palette[i].g =  g;
+	        palette[i].b =  b;
+
+			palette[i+64].r = r >> 1;
+			palette[i+64].g = (g >> 2) | 64;
+			palette[i+64].b = b >> 1;
+		}
+    }
+
 
     for (i = 0; i < 7; i++)
     {
@@ -171,6 +213,8 @@ void set_emupalette()
     palette[255].r = 255;
     palette[255].g = 255;
     palette[255].b = 255;
+
+
     set_palette(palette);
 }
 
@@ -253,9 +297,9 @@ void load_mconfig()
         fclose(fp);
         read = 1;
     }
-    if (mconfig.id != 0xABCD0014 || !read)
+    if (mconfig.id != 0xABCD0015 || !read)
     {
-        mconfig.id = 0xABCD0014;
+        mconfig.id = 0xABCD0015;
 #ifdef IPHONE
         mconfig.zx_screen_mode = 0;
         mconfig.frameskip = 1;
@@ -276,6 +320,7 @@ void load_mconfig()
         mconfig.edge_loading = 1;
         mconfig.auto_loading = 1;
         mconfig.cpu_freq = 250;
+        mconfig.ula64 = 1;
     }
     volume = mconfig.sound_volume;
 
@@ -474,7 +519,15 @@ void mask_out(int  x,int y)
             if (*p2 == 0)
             {
                 v = *p;
-                if (v<17) v += 18;
+
+                if (zx_ula64_enabled)
+                {
+                	if(v<63)v += 64;
+                }
+                else
+                {
+                    if(v<17)v += 18;
+                }
                 *p++ = v;
                 p2++;
             }
@@ -814,11 +867,22 @@ char * get_name_short(char *name) // devuelve el nombre del fichero recortado a 
     return (char*)name2;
 }
 
-byte  scrbuff[2*16*16384 * 2]; //TODO He amuentado el buffer * 2 ver porque petaba antes los z80 al cargarlos
+byte  scrbuff[2*16*16384 * 2]; //TODO He aumentado el buffer * 2 ver porque petaba antes los z80 al cargarlos
+char last_rom_name[512];
 
 int load_scr(char *name, char * buffer, int size)
 {
     FILE *fp;
+
+    if(strcmp(name,last_rom_name)==0)return 0;
+    strcpy(last_rom_name,name);
+
+	//if(zx_ula64_enabled !=0 && (mconfig.ula64 == 1 || mconfig.ula64 == 0))
+    if(zx_ula64_enabled !=0 && (mconfig.ula64 != 2))
+	{
+	    zx_ula64_enabled = 0;
+	    set_emupalette();
+	}
 
     fp = fopen(name,"rb");
     if (fp == NULL) return 1;
@@ -844,6 +908,78 @@ int load_scr(char *name, char * buffer, int size)
     fclose(fp);
     return 0;
 }
+
+
+
+int load_savsrc(char *name, char * buffer, int size)
+{
+    FILE *fp;
+    byte ula64colors[64];
+
+    if(strcmp(name,last_rom_name)==0)return 0;
+    strcpy(last_rom_name,name);
+
+    fp = fopen(name,"rb");
+    if (fp == NULL) return 1;
+
+    BZFILE * my_bzip;
+    int bzip_err = 0;
+
+
+    my_bzip = BZ2_bzReadOpen( &bzip_err, fp, 0, 1, NULL, 0 );
+
+    BZ2_bzRead (&bzip_err, my_bzip, (void *)&state_header, sizeof(state_header));
+
+    if (state_header.header != 0x12345678) {BZ2_bzReadClose (&bzip_err, my_bzip);fclose(fp);return 0;}
+
+    if(state_header.ulaplus[0]=='u' && state_header.ulaplus[1]=='l' && state_header.ulaplus[2]=='a'
+       && state_header.ulaplus[3]=='6' && state_header.ulaplus[4]=='4' )
+
+    {
+    	BZ2_bzRead (&bzip_err, my_bzip, (void *)&ula64colors, 64);
+    	if(mconfig.ula64 != 2)
+    	{
+   	      zx_ula64_enabled = 1;
+   	      memcpy(zx_ula64_palette,ula64colors,64);
+   	      set_emupalette();
+    	}
+    	/*
+    	if(mconfig.ula64 == 1)
+    	{
+   	      zx_ula64_enabled = 1;
+   	      memcpy(zx_ula64_palette,ula64colors,64);
+   	      set_emupalette();
+    	}
+    	else if(mconfig.ula64 == 0)
+    	{
+     	   zx_ula64_enabled = 0;
+     	   set_emupalette();
+    	}
+    	*/
+    }
+    else
+    {
+    	//if(zx_ula64_enabled !=0 && (mconfig.ula64 == 1 || mconfig.ula64 == 0))
+    	if(zx_ula64_enabled !=0 && (mconfig.ula64 !=2))
+    	{
+   	      zx_ula64_enabled = 0;
+   	      set_emupalette();
+    	}
+    }
+
+    if (state_header.have_fd_info == 1)
+    {
+    	byte tmp[4+4+4+4+ sizeof (t_FDC)+sizeof (t_track)];
+    	BZ2_bzRead (&bzip_err, my_bzip, (void *) &tmp,sizeof(tmp));
+    }
+
+    BZ2_bzRead (&bzip_err, my_bzip, buffer, size);
+    BZ2_bzReadClose (&bzip_err, my_bzip);
+    fclose(fp);
+    return 0;
+
+}
+
 
 char * get_name(char *name) // devuelve el nombre del fichero completo
 {
@@ -880,7 +1016,7 @@ int get_rom(int tape)
     if (nfiles) init = 0;
     else init = 1;
 
-    while(nKeys & (JOY_BUTTON_MENU | JOY_BUTTON_X)) nKeys = joystick_read(); // para quieto!!
+    while(nKeys & (JOY_BUTTON_MENU | JOY_BUTTON_X |  JOY_BUTTON_A |  JOY_BUTTON_B)) nKeys = joystick_read(); // para quieto!!
 
     if (posfile>= nfiles) posfile = 0;
     COLORFONDO = 128;
@@ -911,6 +1047,8 @@ int get_rom(int tape)
         if (!files[posfile].is_directory)
         {
             int l  = strlen(files[posfile].file);
+
+
             if ( !strcasecmp(files[posfile].file+l-4,".sna") || !strcasecmp(files[posfile].file+l-8,".sna.bz2") )
             {
                 if (!load_scr(files[posfile].file, scrbuff, sizeof(scrbuff)))
@@ -918,7 +1056,21 @@ int get_rom(int tape)
                     DrawZXtoScreen(video_screen8, &scrbuff[27], scale, 2);
                 }
             }
-            else
+            else if ( !strcasecmp(files[posfile].file+l-4,".sav") )
+            {
+
+            	if (!load_savsrc(files[posfile].file, scrbuff, sizeof(scrbuff)))
+                {
+
+             		byte nPages = scrbuff[6+sizeof(Z80Regs)];
+
+             		if(nPages==3 || nPages==1)
+            		   DrawZXtoScreen(video_screen8, &scrbuff[7+sizeof(Z80Regs)], scale, 2);
+             		else if(nPages==8)
+             		   DrawZXtoScreen(video_screen8, &scrbuff[7+sizeof(Z80Regs)+  (0x4000 * 5)], scale, 2);
+
+                }
+             }
             if ( !strcasecmp(files[posfile].file+l-3,".sp") || !strcasecmp(files[posfile].file+l-7,".sp.bz2") )
             {
                 if (!load_scr(files[posfile].file, scrbuff, sizeof(scrbuff)))
@@ -1051,7 +1203,7 @@ int get_rom(int tape)
         }
 */
 #ifdef IPHONE
-        v_putcad(1,28,132,"Use B to Play");
+        v_putcad(1,28,132,"Use X to Exit, Use B to Play");
 #else
         v_putcad(1,28,132,"Use X to Exit, B to Play, Y to delete");
 #endif
@@ -1092,7 +1244,8 @@ int get_rom(int tape)
             {
                 if (!files[posfile].is_directory)
                 {
-                    return posfile;
+                	last_rom_name[0]=0;
+                	return posfile;
                 }
                 else
                 {
@@ -1187,14 +1340,23 @@ int get_rom(int tape)
 /*            posfile = 0; */
         }
 
-        if ((new_key & JOY_BUTTON_L) || (new_key & JOY_BUTTON_LEFT )) { posfile -= 24; if ( posfile < 0       ) posfile = 0;          }
-        if ((new_key & JOY_BUTTON_R) || (new_key & JOY_BUTTON_RIGHT)) { posfile += 24; if ( posfile >= nfiles ) posfile = nfiles - 1; }
+        if ((new_key & JOY_BUTTON_L) ) { posfile = 0;}
+        if ((new_key & JOY_BUTTON_R) ) { posfile = nfiles - 1; }
+        if ((new_key & JOY_BUTTON_LEFT )) { posfile -= 24; if ( posfile < 0       ) posfile = 0;          }
+        if ((new_key & JOY_BUTTON_RIGHT)) { posfile += 24; if ( posfile >= nfiles ) posfile = nfiles - 1; }
+
+        //if ((new_key & JOY_BUTTON_L) || (new_key & JOY_BUTTON_LEFT )) { posfile -= 24; if ( posfile < 0       ) posfile = 0;          }
+        //if ((new_key & JOY_BUTTON_R) || (new_key & JOY_BUTTON_RIGHT)) { posfile += 24; if ( posfile >= nfiles ) posfile = nfiles - 1; }
 
         if ((new_key & JOY_BUTTON_UP   )) { posfile--; if ( posfile < 0       ) posfile = nfiles - 1; }
         if ((new_key & JOY_BUTTON_DOWN )) { posfile++; if ( posfile >= nfiles ) posfile = 0;          }
-#ifndef IPHONE
-        if (new_key & JOY_BUTTON_X) return -1;
-#endif
+
+        if (new_key & JOY_BUTTON_X)
+        {
+        	last_rom_name[0]=0;
+        	return -1;
+        }
+
     }
 
     return -1;
@@ -1219,9 +1381,9 @@ void credits()
 
 #ifdef IPHONE
     y = 4;
-    v_putcad((40-38)/2,y,130,"iXpectrum v1.0 by Seleuco (D.Valdeita)");y += 2;
+    v_putcad((40-38)/2,y,130,"iXpectrum v1.1 by D.Valdeita (Seleuco)");y += 2;
     v_putcad((40-33)/2,y,130,"Using some iPhone code from ZodTTD");y += 3;
-    v_putcad((40-32)/2,y,132,"Based on GP2XPectrum 1.8 work of");y += 2;
+    v_putcad((40-32)/2,y,132,"Based on GP2XPectrum 1.9 work of");y += 2;
     v_putcad((40-17)/2,y,132,"Hermes/PS2Reality");y += 2;
     v_putcad((40-33)/2,y,132,"Seleuco & Metalbrain & SplinterGU");y += 2;
     v_putcad((40-14)/2,y,132,"rlyeh / fZX32");y += 2;
@@ -1233,11 +1395,10 @@ void credits()
     v_putcad((40-27)/2,y,132,"and others (thanks for all)");//y += 2;
 #else
     y=1;
-    v_putcad((40-18)/2,y,130,"GP2Xpectrum v1.8.1");y += 2;
-    v_putcad((40-38)/2,y,130,"ported Wiz by SplinterGU");y += 3;
+    v_putcad((40-18)/2,y,130,"GP2Xpectrum v1.9");y += 2;
     v_putcad((40-21)/2,y,132,"Based on the work of:");y += 2;
     v_putcad((40-17)/2,y,132,"Hermes/PS2Reality");y += 2;
-    v_putcad((40-20)/2,y,132,"Metalbrain & Seleuco");y += 2;
+    v_putcad((40-33)/2,y,132,"Metalbrain & Seleuco & SplinterGU");y += 2;
     v_putcad((40-15)/2,y,132,"kounch, GnoStiC");y += 2;
     v_putcad((40-13)/2,y,132,"rlyeh / fZX32");y += 2;
     v_putcad((40-27)/2,y,132,"Santiago Romero / ASpectrum");y += 2;
@@ -2055,6 +2216,23 @@ int Config_SCR()
         if (op == 3) COLORFONDO = 129; else COLORFONDO = 128;
         v_putcad(10,y,130,"POKE Manager");y += 1;
 
+        if (op == 4) COLORFONDO = 129; else COLORFONDO = 128;
+        if (mconfig.ula64 == 0)
+        {
+            v_putcad(10,y,130,"Ula+64 Disabled");y += 1;
+        }
+        else if (mconfig.ula64 == 1)
+        {
+            v_putcad(10,y,130,"Ula+64 with Color Reset");y += 1;
+        }
+        else if (mconfig.ula64 == 2)
+        {
+            v_putcad(10,y,130,"Ula+64 without Color Reset");y += 1;
+        }
+
+        //if (mconfig.ula64_reset) v_putcad(10,y,130,"Ula64 Reset ON");
+        //else v_putcad(10,y,130,"Ula64 Reset OFF"); y += 1;
+
         //opciones 10,11,12 saltarse si no plus3
         if (model == ZX_PLUS3)
         {
@@ -2073,6 +2251,7 @@ int Config_SCR()
         if (op == 12) COLORFONDO = 129; else COLORFONDO = 128;
         if (mconfig.show_fps) v_putcad(10,y,130,"Show FPS ON");
         else v_putcad(10,y,130,"Show FPS OFF");
+
         y += 1;
 
         //y += 1;///SALTO
@@ -2098,9 +2277,11 @@ int Config_SCR()
         if (op == 15) COLORFONDO = 129; else COLORFONDO = 128;
         //sprintf(menustring,"CPU Speed %i MHz",mconfig.cpu_freq);
         //v_putcad(10,y,130,menustring);
-        if (mconfig.frameskip) v_putcad(10,y,130,"Frame Skip ON");
-        else v_putcad(10,y,130,"Frame Skip OFF");
+        if (mconfig.frameskip) v_putcad(10,y,130,"Emulate 25 FPS");
+        else v_putcad(10,y,130,"Emulate 50 FPS");
         y += 1;
+
+
 
         y += 1;///SALTO
         //opcion 16
@@ -2215,9 +2396,9 @@ int Config_SCR()
             else if (!(g & 1)) g = 1;
             else {g += 2;if (g>81) {g = 69; new_key |= JOY_BUTTON_DOWN;}}
         }
-        if (new_key & JOY_BUTTON_UP) {op--;if (model != ZX_PLUS3 && op == 11) op = 3; if (model == ZX_PLUS3 && op == 8) op = 3;if (op<0) op = 25;}
+        if (new_key & JOY_BUTTON_UP) {op--;if (model != ZX_PLUS3 && op == 11) op = 4; if (model == ZX_PLUS3 && op == 8) op = 4;if (op<0) op = 25;}
 
-        if (new_key & JOY_BUTTON_DOWN) {op++;if (model != ZX_PLUS3 && op == 4) op = 12; if (model == ZX_PLUS3 && op == 4) op = 9; if (op>25) op = 0;}
+        if (new_key & JOY_BUTTON_DOWN) {op++;if (model != ZX_PLUS3 && op == 5) op = 12; if (model == ZX_PLUS3 && op == 5) op = 9; if (op>25) op = 0;}
 
         if (new_key & JOY_BUTTON_LEFT)
         {
@@ -2334,7 +2515,7 @@ int Config_SCR()
             }
         }
 
-        if (new_key & JOY_BUTTON_MENU) break;
+        if (new_key & JOY_BUTTON_MENU || new_key & JOY_BUTTON_X) break;
 
         if (new_key & JOY_BUTTON_B)
         {
@@ -2352,7 +2533,14 @@ int Config_SCR()
 
             //if (op == 3) mconfig.zx_screen_mode ^= 1;
             //if (op == 4){mconfig.wait_vsync ^= 1;}
+
             if (op == 3) {poke_manager();}
+
+            if (op == 4){
+                mconfig.ula64 += 1;
+                if (mconfig.ula64 > 2)
+                    mconfig.ula64 = 0;
+            }
 
             if (op == 9) {load_empty_dsk();dsk_load((void *) DSK);break;}
             if (op == 10) {if (driveA.sides) {dsk_flipped ^= 1;driveA.flipped = dsk_flipped;} else driveA.flipped = 0;}
@@ -2369,6 +2557,7 @@ int Config_SCR()
                        if (tape_playing && mconfig.speed_loading)
                            sound_pause();
             }
+
 
             if (op == 18)
             {
@@ -2395,7 +2584,11 @@ int Config_SCR()
 
             if (op == 23){mconfig.zx_screen_mode ^= 1;}
 
-            if (op == 24){ret = 1;break;}
+            if (op == 24){
+
+            	 ret = 1;
+            	 break;
+            }
 
             if (op == 25) break;
         }
@@ -2558,6 +2751,8 @@ int display_keyboard()
     static int sub_men = 0;
     static int flip = 0;
 
+    while(nKeys & JOY_BUTTON_MENU) nKeys = joystick_read();
+
     if (menu_mode == 0)
     {
         if (program_mode && cury<4)
@@ -2607,9 +2802,20 @@ int display_keyboard()
                 if (nmultikey<8) multiple_key[nmultikey++] = keyb_num[cury][curx];
                 redrawmask = 1;
             }
+
+            if (new_key & JOY_BUTTON_X)
+            {
+                keyboard_on = 0;
+                while(nKeys & JOY_BUTTON_X) nKeys = joystick_read(); // para quieto!!
+                return;
+            }
         }
 
-        if ((new_key & JOY_BUTTON_MENU) && cury != 4) {redrawmask = 1;program_mode ^= 1;}
+        if ((new_key & JOY_BUTTON_MENU) && cury != 4) {
+        	redrawmask = 1;
+        	program_mode ^= 1;
+        	while(nKeys & JOY_BUTTON_MENU) nKeys = joystick_read();
+        }
 
         if (program_mode) redrawmask = 1;
         else
@@ -2988,19 +3194,7 @@ int compress_rom(char *name)
     return 0;
 }
 
-struct
-{
-    unsigned header;
-    int mJoystick;
-    int map_keys[16];
-    unsigned char filename[256];
-    int have_fd_info;
-    unsigned reserved[63];
-} state_header;
-
-
 #define SIZEOFZ80REGS sizeof(Z80Regs)
-
 
 t_track  track_temp;
 #define RESTA_PUNT(a) if ((int)a != 0)  a -= (unsigned) DSK; else a = (void*)/*(unsigned)*/ -1
@@ -3043,11 +3237,24 @@ int save_state(int st)
 
     if (model == ZX_PLUS3) state_header.have_fd_info = 1; else state_header.have_fd_info = 0;
 
+
+    if(zx_ula64_enabled)
+    	strcpy((void*)state_header.ulaplus,"ula64");
+    else
+    	strcpy((void*)state_header.ulaplus,"nope");
+
     BZ2_bzWrite (&bzip_err, my_bzip, (void *)&state_header,  sizeof(state_header));
+
+
     if (bzip_err != BZ_OK) {file_error = 1;}
     else
     {
-        if (state_header.have_fd_info == 1)
+        if(zx_ula64_enabled)
+        {
+        	  BZ2_bzWrite (&bzip_err, my_bzip, (void *)&zx_ula64_palette,64);
+        }
+
+    	if (state_header.have_fd_info == 1)
         {
             BZ2_bzWrite (&bzip_err, my_bzip, (void *) &driveA.current_track,  4);
             BZ2_bzWrite (&bzip_err, my_bzip, (void *) &driveA.current_side,  4);
@@ -3101,6 +3308,8 @@ int load_state(int st)
 {
     FILE * fp; unsigned char *mem;
     unsigned temp, size;
+    int  ula64 = 0;
+    byte ula64Colors[64];
 
     char *mname;
 
@@ -3122,6 +3331,13 @@ int load_state(int st)
     size = BZ2_bzRead (&bzip_err, my_bzip, (void *)&state_header, sizeof(state_header));
 
     if (state_header.header != 0x12345678) {BZ2_bzReadClose (&bzip_err, my_bzip);fclose(fp);return 0;}
+
+    if(state_header.ulaplus[0]=='u' && state_header.ulaplus[1]=='l' && state_header.ulaplus[2]=='a'
+       && state_header.ulaplus[3]=='6' && state_header.ulaplus[4]=='4')
+    {
+    	ula64=1;
+    	BZ2_bzRead (&bzip_err, my_bzip, (void *)&ula64Colors, 64);
+    }
 
     if (state_header.have_fd_info == 1)
     {
@@ -3173,6 +3389,16 @@ int load_state(int st)
 
         free(mem);
 
+        if(ula64)
+        {
+        	//if((!zx_ula64_enabled  && mconfig.ula64!=0)|| ( mconfig.ula64==1))
+        	if(!(zx_ula64_enabled  && mconfig.ula64==2))//if a save state has ula i put it but hw ula could be disabled
+        	{
+        		memcpy(zx_ula64_palette,ula64Colors,64);
+        		zx_ula64_enabled = 1;
+        		set_emupalette();
+        	}
+        }
 
         if (state_header.have_fd_info == 1)
         {
@@ -3248,7 +3474,7 @@ tape_browser()
             m++;
         }
 
-        v_putcad(1,26,132,"Press X to Exit, Menu to New Tape");
+        v_putcad(1,26,132,"Press X to Exit, A to New Tape");
         v_putcad(1,28,132,"B to Toggle Tape Play or Change Block");
 
         SyncFreq2();
@@ -3272,7 +3498,7 @@ tape_browser()
 
         if (new_key & JOY_BUTTON_X) break;
 
-        if (new_key & JOY_BUTTON_MENU)
+        if (new_key & JOY_BUTTON_A)
         {
             int r = get_rom(1);
             while(nKeys & (JOY_BUTTON_B | JOY_BUTTON_X)) nKeys = joystick_read(); // para quieto!!
@@ -3351,6 +3577,10 @@ int main(int argc, char *argv[])
 
     cur_frame = 0;
 
+    numKeys = 0;
+    isShiftKey  = 0;
+    isSymbolKey = 0;
+
     MY_filename = "default_name.fak";
     spectrumZ80 = &regs_z80;
 
@@ -3385,6 +3615,7 @@ int main(int argc, char *argv[])
     ZX_Init();
 
 
+
     while(1)
     {
         while(nKeys & (JOY_BUTTON_A | JOY_BUTTON_B | JOY_BUTTON_X | JOY_BUTTON_Y | JOY_BUTTON_MENU)) nKeys = joystick_read();
@@ -3393,8 +3624,19 @@ int main(int argc, char *argv[])
         nvol = 0;
         dsk_flipped = 0;
         r = get_rom(0);
-        if (r == -1) break;
         ret = 0;
+
+        if (r == -1)
+        {
+#ifndef IPHONE
+        break;
+#else
+        tape_init();
+        ZX_Reset(ZX_128);
+        ret=666;
+#endif
+        }
+
         if (r>= 0)
         {
             if (is_ext (files[r].file, ".sav"))
@@ -3443,6 +3685,7 @@ int main(int argc, char *argv[])
 
         skip = 0;
         count_fps = 0;
+        emulating = 1;
         while(1)
         {
 #ifdef  CAPTURE
@@ -3464,8 +3707,10 @@ int main(int argc, char *argv[])
             {
                 //printf("Inicio llamada a ConfigSCR\n");
                 //TODO sound pause!
+            	emulating = 0;
             	if (Config_SCR() == 1) break;
             	//printf("Salida llamada a ConfigSCR\n");
+            	emulating = 1;
                 skip = 0;
             }
 
@@ -3587,6 +3832,16 @@ int main(int argc, char *argv[])
                 menu_mode = 0;
             }
 
+            //external keyboard
+            int jj = 0;
+            for(jj=0; jj< numKeys;jj++)
+               ZXKey(keyboardKeys[jj]);
+
+            if(isShiftKey != 0)
+               ZXKey(SPECKEY_SHIFT);
+            if(isSymbolKey != 0)
+               ZXKey(SPECKEY_SYMB);
+
             if (keyboard_on)
             {
                 if (old_key & JOY_BUTTON_B)
@@ -3685,7 +3940,10 @@ int main(int argc, char *argv[])
 
             if (keyboard_on)
             {
-                sel_key = display_keyboard();
+                if(ext_keyboard)
+                	keyboard_on = 0;
+                else
+            	    sel_key = display_keyboard();
 /*
                 if ((old_key & JOY_BUTTON_Y)&&(unprogram == 0))
                 {

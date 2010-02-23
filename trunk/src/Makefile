@@ -16,6 +16,7 @@ OBJECTS =   IPhone/iph_main.o   \
             IPhone/HelpController.o \
             IPhone/OptionsController.o \
             IPhone/helpers.o   \
+            IPhone/MagnifierView.o   \
             main.o                          \
             font.o                          \
             IPhone/microlib.o               \

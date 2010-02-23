@@ -1,6 +1,6 @@
-iXpectrum v1.0 for Jailbroken iPhone & iPod Touch with firmware 3.1.2 by Seleuco (D.Valdeita)
+iXpectrum v1.1 for Jailbroken iPhone & iPod Touch by D.Valdeita (Seleuco)
 
-Based in gp2xpectrum v1.8 by Hermes and continued by Metalbrain & Seleuco & SplinterGU.
+Based in gp2xpectrum v1.9 by Hermes and continued by Metalbrain & Seleuco & SplinterGU.
 
 iXpectrum is a ZX Spectrum emulator for Jailbroken iPhone & iPod Touch with the following features:
 
@@ -8,25 +8,65 @@ iXpectrum is a ZX Spectrum emulator for Jailbroken iPhone & iPod Touch with the 
 - Portrait-Landscape auto rotation.
 - Accurate audio. 
 - Image smoothing & full screen with aspect ratio options.
+- Touch ZX Spectrum keyboard.
 
-Also includes all features from gp2Xpectrum :) .
+if you wish to colaborate, get the source code or port to another platform, take a look at the xpectrum site: 
+
+http://code.google.com/p/xpectrum/
+
+New in 1.1:
+
+- Added a real :) ZX Spectrum touch keyboard in portrait mode and a transparent touch keyboard in landscape mode so you can play adventure text games and make some BASIC programs if you like :P.
+
+- Added emulation for ULAplus.
+ (ULAplus is a plug-in replacement ULA for the ZX Spectrum which increases the total 
+ palette to 256 colours). 
+
+Read more at: http://sites.google.com/site/ulaplus/
+
+Thanks to Chris Smith & Andrew Owen and others involved.
+
+- Added thumbnails in save states.
+
+- Reallocated some keys. Some minor bug fixes.
+
+Also includes all features from gp2Xpectrum :).
 
 The emulator includes the following great games with the permission of Jonathan Cauldwell:
 
-Egghead Round the Med
-Banger Management
-Albatrossity
-Christmas Cracker
-Kuiper Pursuit
-Battery's not Precluded
+-Egghead Round the Med
+
+-Banger Management
+
+-Albatrossity (very funny)
+
+-Christmas Cracker
+
+-Kuiper Pursuit
+
+-Battery's not Precluded (Ula+64 compatible)
+
+-Eggheadplus (ula+64 demo)
 
 there is also included the following games from the spanish's scene created by mojontwins:
 
-Cheril of the Bosque
-Lala Prologue
-Sgt. Helmet Zero
+-Lala Prologue
+
+-Moggy-Adventure
+
+-Cheril of the Bosque
+
+-Sgt. Helmet Zero (ula+64 compatible)
+
+-Subaquatic (ula+64 compatible)
+
+-Subaquatic-Reloaded (ula+64 compatible)
+
+-Uwol (Ula+64 compatible)
 
 "Lala Prologue" is just great. :)
+
+The Emulator also includes some slideshows showing the Ula+64 working (take a look at the c64 slideshow thanks to Tom Cat. It looks impressive) and some ula+64 palettes that you can load before a game to change its colours.
 
 INSTALLING
 ----------
@@ -45,15 +85,20 @@ this copy is done via ssh to the ip of the phone.
 
 You can also use a rich GUI client like Filezilla to do a SFTP copy or maybe WinSCP if you prefer.
 
-IPHONE
+iPHONE
 ------
 
-Tap in the bottom left corner icon to change the following options:
+Tap in the bottom left corner icon (in portrait mode) to change the following options:
 
-Keep Aspect Ratio. 'Enabled' keeps the aspect ratio in landscape mode; 'Disabled' will use all available screen.
+-Keep Aspect Ratio. 'Enabled' keeps the aspect ratio in landscape mode; 'Disabled' will use all available screen.
 
-Smoothed screen. Enable to apply a image filter over the emulator screen.
+-Smoothed screen. Enable to apply a image filter over the emulator screen.
 
+You can tap in the speccy screen (in portrait mode) to change from the controller to the touch keyboard. Tape it again to back to the controller.
+
+Also you can tap in the top of the screen to show the transparent keyboard when you are in the landscape mode. The landscape keyboard can be hide touching in the "hide" label. When hide it, you can touch in any position of the screen to show it again. Touch in the "Back to Controller" label to back to the controller.
+
+You can load a ula+ palette and insert a new tape to load a game with this palette applied, or you can set the option "ula+64 without reset" (from the configuration menu) to load a snapshot or tape from the standard menu, without reset the colours loaded previously even if you reset the speccy (it makes easy to test games with palette colours).
 
 GAME FORMATS
 ------------
@@ -67,7 +112,9 @@ You can load the save states (.sav) directly, too.
 GAME SELECTION
 --------------
 
-Use the stick (UP/DOWN) to browse, L & R to move page and B to select.
+Use the stick (UP/DOWN) to browse, stick (LEFT/RIGHT) to move page, L & R to go to first or last entry and B to select. 
+
+X exits resetting the speccy to 128K mode. (you can reset to another model in the virtual keyboard, see later)
 
 Press SELECT to return to the main menu (or Tape Browser).
 
@@ -75,15 +122,15 @@ Press SELECT to return to the main menu (or Tape Browser).
 PLAYING A GAME
 --------------
 
-The emulator will works full speed in iPhone 3G in landscape or portrait mode (depends on frameskip & contention options), with mono or stereo sound between 11025-44100Hz. Both beeper and AY chip are supported.
+The emulator will works full speed in iPhone 3G in landscape or portrait mode (depends on frames emulated and contention options), with mono or stereo sound between 11025-44100Hz. Both beeper and AY chip are supported.
 
 Button layout:
 
-Stick, A,B,X,Y,L,R -> programmable with the virtual keyboard. In joystick emulation B button is assigned as joy fire button.
+Stick, A,B,X,Y,L,R -> programmable with the virtual keyboard (not from the touch keyboard). In joystick emulation B button is assigned as joy fire button.
 
-SELECT -> access to the config menu
+SELECT (called "m2" in iPhone) -> access to the config menu
 
-START -> show the virtual keyboard
+START (called "m1" in iPhone)-> show the virtual keyboard
 
 
 VIRTUAL KEYBOARD
@@ -97,18 +144,15 @@ Pressing START we can exit the virtual keyboard.
 
 BUTTON PROGRAMMING:
 
- Push SELECT (the key selector will flash) and press the stick direction or button (A,B,X,Y,L,R) you wish to assign to this key.
- You may abort the programming mode by pushing SELECT again.
+Push SELECT (the key selector will flash) and press the stick direction or button (A,B,X,Y,L,R) you wish to assign to this key. You may abort the programming mode by pushing SELECT again.
 
 SPECIAL FUNCTIONS:
 
 In the virtual keyboard, 5 special functions are included:
 
-RESET: by pressing B, a new submenu appears to select the Spectrum model you want to reset to. By default, the emulator resets to the 128K model. If a game in .tap or .tzx format, doesn't load in this mode, reset the enulator using the 48K model.
-To abort the operation, use X button.
+RESET: by pressing B, a new submenu appears to select the Spectrum model you want to reset to. By default, the emulator resets to the 128K model. If a game in .tap or .tzx format, doesn't load in this mode, reset the enulator using the 48K model.To abort the operation, use X button.
 
-LOAD: if a game requires the 48K mode, push B in this option to get the LOAD "" spectrum command to load a game in .tap
-or .tzx format.
+LOAD: if a game requires the 48K mode, push B in this option to get the LOAD "" spectrum command to load a game in .tap or .tzx format.
 
 KEYBOARD/JOYSTICKS: use this option to assign the stick and buttons to spectrum keys or differents spectrum's joysticks interfaces.
 
@@ -134,15 +178,17 @@ Show FPS [on/off] -> show/hide the current frames per second.
 
 POKE Manager-> shows the POKE menu (modification of spectrum memory values)
 
+"Ula+64 disabled", "Ula+64 with colour reset" and "Ula+64 without color reset" disable ULAPlus emulated HW or enable it keeping the palette colours between resets ot not.
+
 New +3 Disk (only appears while emulating the +3 model) -> Put a new formated +3 disc Use SIDE A for +3 Disk (only appears while emulating the +3 model) -> Side selector (for double side discs)
 
 Save +3 Disk (only appears while emulating the +3 model) -> Save the current disc in the directory /roms/spectrum/saves with a new name (if you write new data in the disc, use this to save).
 
-Frame Skip [on/off] -> Enable/disable frameskip.
+Emulate 25fps or 50fps -> ZX Spectrum works in PAL mode so 25fps should be enough in most cases but if you want to see all ULA effects enable 50 fps at the expense of losing performance.
 
 Contention [on/off] -> Enable/disable contended memory emulation.
 
-Emulation Speed [25 to 175]% -> Allows you to change the orginal Spectrum speed, which can be useful to vary the difficulty of games or to observe a detail more slowly. While this option is selected, the volume buttons will vary this speed, not the CPU's.
+Emulation Speed [25 to 175]% -> Allows you to change the orginal Spectrum speed, which can be useful to vary the difficulty of games or to observe a detail more slowly. While this option is selected, the stick buttons (LEFT & RIGHT) will vary this speed.
 
 Sound [OFF/Mono/Stereo Beeper/Stereo ABC AY/Stereo ALL] -> sets sound mode.
 
@@ -162,20 +208,14 @@ Exit from Game -> exit from the game to the game selection screen.
 
 Return to Game -> returns to the game.
 
-Note: 
-
-If you want to load a game in high compability mode, or just as original spectrum did, disable Fast & Flash & Edge loading.
-
-If you still have problems loading the game, remember to reset to 48k mode.
+Note: If you want to load a game in high compability mode, or just as original spectrum did, disable Fast & Flash & Edge loading. If you still have problems loading the game, remember to reset to 48k mode.
 
 Tape Browser
 ------------
 
-Entering this menu, if a tape is inserted, we'll see the blocks inside the tape, and current block will be marked with an asterisk sign.
+Entering this menu, if a tape is inserted, we'll see the blocks inside the tape, and current block will be marked with an asterisk sign. Moving the joystick up and down we can select other blocks. Pressing B while the current block is selected we'll manually start or stop the tape. Pressing B while another block is selected, that block will become the current one.
 
-Moving the joystick up and down we can select other blocks. Pressing B while the current block is selected we'll manually start or stop the tape. Pressing B while another block is selected, that block will become the current one.
-
-START will allow us to load a differnt tape (or even a snapshot). With SELECT we'll exit the Tape Browser.
+"A" will allow us to load a differnt tape (or even a snapshot). With "X" we'll exit the Tape Browser.
 
 POKE Manager
 ------------
@@ -261,6 +301,18 @@ v.1.0 by Seleuco (2010/05/02)
 - Landscape & Portrait mode autorotate.
 - Added option to enable\disable image smoothing. 
 - Added option to enable\disable keep aspect ratio in landscape mode.
+
+V.1.1 by Seleuco (2010/02/23)
+
+- Added a full ZX Spectrum Portrait touch keyboard with key zooming.
+- Added a landscape transparent touch keyboard that can be hidden.
+- Added emulation for ULAplus 64 color mode.
+- Added support for ULaPlus in save states (retaining the compability with previous savestates)
+- Added thumbnails for save states
+- Changed some keys mapping for better coherency.
+- L & R changed to go to the  first or last ROM in the ROMs screen.
+- Changed frame skip option name to 25fps or 50fps option name (is more clear)
+- Some minor bug fixes. 
 
 
 GP2Xpectrum
@@ -405,4 +457,14 @@ v.1.8.1 by Seleuco (2010/05/02)
 - Added auto fullscreen off while is loading a tape.
 - Set default keys when load a new rom. Fixed some key mappings.
 - Some SDL refactoring to make it more portable.
+
+
+v.1.9 by Seleuco (2010/23/02)
+- Added emulation for ULAplus 64 color mode.
+- Added support for ULaPlus in save states (retaining the compability with previous savestates)
+- Added thumbnails for save states
+- Changed some keys mapping for better coherency.
+- L & R changed to go to the  first or last ROM in the ROMs screen.
+- Changed frame skip option name to 25fps or 50fps option name. (is more clear)
+- Some minor bug fixes. 
 

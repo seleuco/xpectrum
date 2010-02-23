@@ -22,6 +22,8 @@
 #import "OptionsController.h"
 #import <pthread.h>
 
+#include "shared.h"
+
 #define IPHONE_MENU_DISABLED            0
 #define IPHONE_MENU_MAIN                1
 
@@ -44,10 +46,14 @@ unsigned short* screenbuffer;
 int iphone_menu = IPHONE_MENU_DISABLED;
 
 int iphone_controller_opacity = 50;
+int iphone_keyboard_opacity = 50;
 int iphone_is_landscape = 0;
 int iphone_smooth = 0;
 int iphone_keep_aspect_ratio = 0;
 
+
+int controller = 1;
+int hide_keyboard = 0;
 
 enum  { GP2X_UP=0x1,       GP2X_LEFT=0x4,       GP2X_DOWN=0x10,  GP2X_RIGHT=0x40,
 	    GP2X_START=1<<8,   GP2X_SELECT=1<<9,    GP2X_L=1<<10,    GP2X_R=1<<11,
@@ -277,8 +283,8 @@ void* app_Thread_Start(void* args)
              
        [screenView removeFromSuperview];
        [screenView release];
-       [controllerImageView removeFromSuperview];
-       [controllerImageView release];
+       [imageView removeFromSuperview];
+       [imageView release];
   
        [self buildPortrait];  
     }
@@ -382,6 +388,9 @@ void* app_Thread_Start(void* args)
 	
 	[NSThread setThreadPriority:1.0];
 	
+	loop = nil;
+	touchTimer = nil;
+	
 }
 
 - (void)drawRect:(CGRect)rect
@@ -400,8 +409,13 @@ void* app_Thread_Start(void* args)
 
   [screenView removeFromSuperview];
   [screenView release];
-  [controllerImageView removeFromSuperview];
-  [controllerImageView release];
+  
+  if(!hide_keyboard)
+  {
+  [imageView removeFromSuperview];
+  [imageView release];
+  }
+  else hide_keyboard = 0;
 
 	if((self.interfaceOrientation ==  UIDeviceOrientationLandscapeLeft) || (self.interfaceOrientation == UIDeviceOrientationLandscapeRight)){
 	    [self buildLandscape];	        
@@ -413,43 +427,363 @@ void* app_Thread_Start(void* args)
 	__emulation_paused = 0;
 }
 
+- (void)buildPortraitImageView {
+  /*
+   [UIView beginAnimations:@"foo2" context:nil];
+   [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
+   [UIView setAnimationDuration:0.50];
+   */
+   if(controller)
+      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_hs%d.png", 0]]];
+   else
+      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_hs%d.png", 0]]];
+   imageView.frame = CGRectMake(0.0f, 240.0f, 320.0f, 240.0f); // Set the frame in which the UIImage should be drawn in.
+   imageView.userInteractionEnabled = NO;
+   imageView.multipleTouchEnabled = NO;
+   imageView.clearsContextBeforeDrawing = NO;
+   [imageView setOpaque:YES];
+    if(controller)
+       [imageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
+    else
+       [imageView setAlpha:((float)iphone_keyboard_opacity / 100.0f)];
+   [self.view addSubview: imageView]; // Draw the image in self.view.
+   //[UIView commitAnimations];
+}
+
 - (void)buildPortrait {
 
    iphone_is_landscape = 0;
    [ self getControllerCoords:0 ];
+   [ self getKeyboardCoords:0 ];
    __emulation_run = 1;
    screenView = [ [ScreenView alloc] initWithFrame: CGRectMake(0, 0, 320, 480)];
    [self.view addSubview: screenView];
-   controllerImageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_hs%d.png", 0/*[SOApp.optionsView getCurrentSkin]*/]]];
-   controllerImageView.frame = CGRectMake(0.0f, 240.0f, 320.0f, 240.0f); // Set the frame in which the UIImage should be drawn in.
-   controllerImageView.userInteractionEnabled = NO;
-   controllerImageView.multipleTouchEnabled = NO;
-   controllerImageView.clearsContextBeforeDrawing = NO;
-   [controllerImageView setOpaque:YES];
-   [controllerImageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
-   [self.view addSubview: controllerImageView]; // Draw the image in self.view.
+   
+   [self buildPortraitImageView];
+
+}
+
+- (void)buildLandscapeImageView{
+/*
+   [UIView beginAnimations:@"foo2" context:nil];
+   [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
+   [UIView setAnimationDuration:0.50];
+*/
+   if(controller)
+      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_fs%d.png", 0]]];			
+   else
+      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_fs%d.png", 0]]];
+   imageView.frame = CGRectMake(0.0f, 0.0f, 480.0f, 320.0f); // Set the frame in which the UIImage should be drawn in.
+   imageView.userInteractionEnabled = NO;
+   imageView.multipleTouchEnabled = NO;
+   imageView.clearsContextBeforeDrawing = NO;
+  [imageView setOpaque:YES];
+   if(controller)
+      [imageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
+   else
+      [imageView setAlpha:((float)iphone_keyboard_opacity / 100.0f)];
+  [self.view addSubview: imageView]; // Draw the image in self.view.
+  //[UIView commitAnimations];
 }
 
 - (void)buildLandscape{
 	
    iphone_is_landscape = 1;
    [ self getControllerCoords:1 ];
+   [ self getKeyboardCoords:1 ];
    __emulation_run = 1;
     screenView = [ [ScreenView alloc] initWithFrame: CGRectMake(0, 0, 480, 320)];			
    [self.view addSubview: screenView];
-   controllerImageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_fs%d.png", 0]]];			
-   controllerImageView.frame = CGRectMake(0.0f, 0.0f, 480.0f, 320.0f); // Set the frame in which the UIImage should be drawn in.
-   controllerImageView.userInteractionEnabled = NO;
-   controllerImageView.multipleTouchEnabled = NO;
-   controllerImageView.clearsContextBeforeDrawing = NO;
-  [controllerImageView setOpaque:YES];
-  [controllerImageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
-  [self.view addSubview: controllerImageView]; // Draw the image in self.view.		
+   
+   [self buildLandscapeImageView];
+		
+}
+
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{	    
+  if(controller)
+  {
+      [self touchesController:touches withEvent:event];
+  }
+  else
+  {
+      [self touchesKeyboard:touches withEvent:event];
+  }  
+  
+}
+
+- (void)showKey:(CGRect)rect{
+
+  if(iphone_is_landscape)return;
+     
+  if(loop==nil)
+  {
+     loop = [[MagnifierView alloc] initWithFrame:self.view.bounds];
+	 loop.viewref = self.view;
+  }
+  if(touchTimer!=nil)
+  {
+     [touchTimer invalidate];
+     touchTimer = nil;
+  }
+  [self.view addSubview:loop];
+  
+  CGPoint p;
+  p.x = rect.origin.x + (rect.size.width / 2);
+  p.y = rect.origin.y + (rect.size.height / 2);
+	
+  loop.touchPoint = p;
+ 
+  [loop setNeedsDisplay];	
+
+}
+
+- (void)hideKey {
+  if(loop!=nil)
+  {
+	 touchTimer = [NSTimer scheduledTimerWithTimeInterval:0.15
+												 target:self
+												selector:@selector( handleAction: )
+											    userInfo:nil
+												repeats:NO];    
+   }
+}
+
+- (void) handleAction:(id)timerObj {
+     [loop removeFromSuperview];
+     touchTimer = nil;
+}
+
+
+- (void)touchesKeyboard:(NSSet *)touches withEvent:(UIEvent *)event {	
+	int i;
+	//Get all the touches.
+	NSSet *allTouches = [event allTouches];
+	int touchcount = [allTouches count];
+	int isHide;
+	
+	numKeys = 0;    
+    isShiftKey  =  0;
+    isSymbolKey =  0;
+    isHide = 0;
+ 
+   if(!__emulation_run)
+   {
+    return;
+   }
+  
+	for (i = 0; i < touchcount; i++) 
+	{
+		UITouch *touch = [[allTouches allObjects] objectAtIndex:i];
+		
+		if(touch == nil)
+		{
+			return;
+		}
+		
+		if( touch.phase == UITouchPhaseBegan		||
+			touch.phase == UITouchPhaseMoved		||
+			touch.phase == UITouchPhaseStationary	)
+		{
+			struct CGPoint point;
+			point = [touch locationInView:self.view];
+			
+			if(hide_keyboard)
+			{
+			    hide_keyboard = 0;
+			   if(iphone_is_landscape)
+                 [self buildLandscapeImageView]; 
+               else
+                 [self buildPortraitImageView];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_SHIFT, point)) {
+			    isShiftKey = 1;
+			    if(touchcount > 1)continue;
+                [self showKey:rSPECKEY_SHIFT];
+			}	
+			
+			else if (MyCGRectContainsPoint(rSPECKEY_SHIFT2, point)) {
+			    isShiftKey = 2;
+			    if(touchcount > 1)continue;
+                [self showKey:rSPECKEY_SHIFT2];                
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_0, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_0; [self showKey:rSPECKEY_0];                          
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_1, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_1; [self showKey:rSPECKEY_1];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_2, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_2; [self showKey:rSPECKEY_2];      
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_3, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_3;[self showKey:rSPECKEY_3];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_4, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_4;[self showKey:rSPECKEY_4];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_5, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_5;[self showKey:rSPECKEY_5];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_6, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_6;[self showKey:rSPECKEY_6];
+			}			
+			else if (MyCGRectContainsPoint(rSPECKEY_7, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_7;[self showKey:rSPECKEY_7];
+			} 
+			else if (MyCGRectContainsPoint(rSPECKEY_8, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_8;[self showKey:rSPECKEY_8];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_9, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_9;[self showKey:rSPECKEY_9];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_0, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_0;[self showKey:rSPECKEY_0];
+			}
+			
+			else if (MyCGRectContainsPoint(rSPECKEY_Q, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_Q;[self showKey:rSPECKEY_Q];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_W, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_W;[self showKey:rSPECKEY_W];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_E, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_E;[self showKey:rSPECKEY_E];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_R, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_R;[self showKey:rSPECKEY_R];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_T, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_T;[self showKey:rSPECKEY_T];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_Y, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_Y;[self showKey:rSPECKEY_Y];
+			}			
+			else if (MyCGRectContainsPoint(rSPECKEY_U, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_U;[self showKey:rSPECKEY_U];
+			} 
+			else if (MyCGRectContainsPoint(rSPECKEY_I, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_I;[self showKey:rSPECKEY_I];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_O, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_O;[self showKey:rSPECKEY_O];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_P, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_P;[self showKey:rSPECKEY_P];
+			}						
+
+			else if (MyCGRectContainsPoint(rSPECKEY_A, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_A;[self showKey:rSPECKEY_A];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_S, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_S;[self showKey:rSPECKEY_S];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_D, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_D;[self showKey:rSPECKEY_D];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_F, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_F;[self showKey:rSPECKEY_F];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_G, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_G;[self showKey:rSPECKEY_G];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_H, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_H;[self showKey:rSPECKEY_H];
+			}			
+			else if (MyCGRectContainsPoint(rSPECKEY_J, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_J;[self showKey:rSPECKEY_J];
+			} 
+			else if (MyCGRectContainsPoint(rSPECKEY_K, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_K;[self showKey:rSPECKEY_K];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_L, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_L;[self showKey:rSPECKEY_L];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_ENTER, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_ENTER;[self showKey:rSPECKEY_ENTER];
+			}						
+
+
+			else if (MyCGRectContainsPoint(rSPECKEY_Z, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_Z;[self showKey:rSPECKEY_Z];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_X, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_X;[self showKey:rSPECKEY_X];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_C, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_C;[self showKey:rSPECKEY_C];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_V, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_V;[self showKey:rSPECKEY_V];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_B, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_B;[self showKey:rSPECKEY_B];
+			}			
+			else if (MyCGRectContainsPoint(rSPECKEY_N, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_N;[self showKey:rSPECKEY_N];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_M, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_M;[self showKey:rSPECKEY_M];
+			} 
+			else if (MyCGRectContainsPoint(rSPECKEY_SYMB, point)) {
+                isSymbolKey = 1;
+                if(touchcount > 1)continue;
+                [self showKey:rSPECKEY_SYMB];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_SYMB2, point)) {
+                isSymbolKey = 2;
+                if(touchcount > 1)continue;
+                [self showKey:rSPECKEY_SYMB2];
+			}			
+			else if (MyCGRectContainsPoint(rSPECKEY_SPACE, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_SPACE;[self showKey:rSPECKEY_SPACE];
+			}
+			else if (MyCGRectContainsPoint(rSPECKEY_ENTER, point)) {
+                keyboardKeys[numKeys++] = SPECKEY_ENTER;[self showKey:rSPECKEY_ENTER];
+			}	
+			else if (MyCGRectContainsPoint(rShowController, point)) {
+		       [self hideKey];
+               controller = 1;
+               ext_keyboard = 0;
+               numKeys = 0;    
+               isShiftKey  =  0;
+               isSymbolKey =  0;
+               [imageView removeFromSuperview];
+               [imageView release];
+               if(iphone_is_landscape)
+                 [self buildLandscapeImageView]; 
+               else
+                 [self buildPortraitImageView];
+               break;
+			}
+		    else if (MyCGRectContainsPoint(rHideKeyboard, point) || MyCGRectContainsPoint(rHideKeyboard2, point)) {
+		       [self hideKey];
+               hide_keyboard = 1;
+               [imageView removeFromSuperview];
+               [imageView release];
+			}				
+		}
+		else
+		{
+			[self hideKey];
+			isHide = 1;
+		}								
+	}
+	
+	if(isHide && isShiftKey==1)
+	  [self showKey:rSPECKEY_SHIFT];
+	if(isHide && isShiftKey==2)
+	  [self showKey:rSPECKEY_SHIFT2];	  
+	if(isHide && isSymbolKey==1)
+      [self showKey:rSPECKEY_SYMB];
+	if(isHide && isSymbolKey==2)
+      [self showKey:rSPECKEY_SYMB2];      	  
 }
 
 #if 1
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+- (void)touchesController:(NSSet *)touches withEvent:(UIEvent *)event
 {	    
+    
   int touchstate[10];
 	//Get all the touches.
   int i;
@@ -474,6 +808,7 @@ void* app_Thread_Start(void* args)
   
   for (i = 0; i < touchcount ; i++) 
   {
+        //printf("Tocuche %d %d\n",i,[allTouches count]);
 	    UITouch *touch = [[allTouches allObjects] objectAtIndex:i];
     
 		if( touch != nil && 
@@ -481,9 +816,10 @@ void* app_Thread_Start(void* args)
 			    touch.phase == UITouchPhaseMoved ||
   			  touch.phase == UITouchPhaseStationary) )
 		{
+			//printf("Miro tocuches\n");
 			struct CGPoint point;
 			point = [touch locationInView:self.view];
-			
+	           
             touchstate[i] = 1;
 
 	        if (MyCGRectContainsPoint(Left, point)) 
@@ -621,6 +957,25 @@ void* app_Thread_Start(void* args)
 
 				}
 			}
+			else if (MyCGRectContainsPoint(rShowController, point)) {
+			   if(!emulating) continue;
+               controller = 0;
+               ext_keyboard = 1;
+               gp2x_pad_status = 0;
+               int ii=0;
+               for (ii = 0; ii < 10; ii++) 
+               {
+                   touchstate[ii] = 0;
+                   oldtouches[ii] = 0;
+               }
+               [imageView removeFromSuperview];
+               [imageView release];
+               if(iphone_is_landscape)
+                 [self buildLandscapeImageView]; 
+               else
+                 [self buildPortraitImageView];
+               break;
+			}					
 			else
 			{
 			    //printf(" fuera\n\n\n");
@@ -636,7 +991,8 @@ void* app_Thread_Start(void* args)
             {
                 //printf(" ( %d old %d == new %d) PAD=%d ",i,oldtouches[i],newtouches[i],gp2x_pad_status);
             }
-		}	
+		}
+
 	} 
 
 //Tiene un fallo cuando no llegan en orden.
@@ -684,7 +1040,7 @@ void* app_Thread_Start(void* args)
 
 #else
 
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {	
+- (void)touchesController:(NSSet *)touches withEvent:(UIEvent *)event {	
 	int i;
 	//Get all the touches.
 	NSSet *allTouches = [event allTouches];
@@ -822,6 +1178,16 @@ void* app_Thread_Start(void* args)
 					}
 				}
 			}
+			else if (MyCGRectContainsPoint(rShowController, point)) {
+               controller = 0;
+               [imageView removeFromSuperview];
+               [imageView release];
+               if(iphone_is_landscape)
+                 [self buildLandscapeImageView]; 
+               else
+                 [self buildPortraitImageView];
+			}	
+			
 		}
 	}
 }
@@ -859,7 +1225,7 @@ void* app_Thread_Start(void* args)
 	{
 
 		int i = 0;
-        while(fgets(string, 256, fp) != NULL && i < 24) 
+        while(fgets(string, 256, fp) != NULL && i < 25) 
        {
 			char* result = strtok(string, ",");
 			int coords[4];
@@ -896,7 +1262,101 @@ void* app_Thread_Start(void* args)
     		case 20:   ButtonUpRight  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
     		case 21:   LPad2   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
     		case 22:   RPad2   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
-        case 23:   iphone_controller_opacity = coords[0]; break;
+    		case 23:   rShowKeyboard  = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+            case 24:   iphone_controller_opacity= coords[0]; break;
+			}
+      i++;
+    }
+    fclose(fp);
+  }
+}
+
+
+- (void)getKeyboardCoords:(int)orientation {
+    char string[256];
+    FILE *fp;
+	
+	if(!orientation)
+	{
+		fp = fopen([[NSString stringWithFormat:@"%skeyboard_hs%d.txt", get_resource_path("/"), 0] UTF8String], "r");
+    }
+	else
+	{
+		fp = fopen([[NSString stringWithFormat:@"%skeyboard_fs%d.txt", get_resource_path("/"), 0] UTF8String], "r");
+	}
+	
+	if (fp) 
+	{
+
+		int i = 0;
+        while(fgets(string, 256, fp) != NULL && i < 46) 
+       {
+			char* result = strtok(string, ",");
+			int coords[4];
+			int i2 = 1;
+			while( result != NULL && i2 < 5 )
+			{
+				coords[i2 - 1] = atoi(result);
+				result = strtok(NULL, ",");
+				i2++;
+			}
+			
+
+			
+			switch(i)
+			{
+    		case 0:    rSPECKEY_1   	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 1:    rSPECKEY_2   	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 2:    rSPECKEY_3    = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 3:    rSPECKEY_4  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 4:    rSPECKEY_5  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 5:    rSPECKEY_6     	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 6:    rSPECKEY_7    	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 7:    rSPECKEY_8  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 8:    rSPECKEY_9 = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 9:    rSPECKEY_0  = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		
+    		case 10:   rSPECKEY_Q   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 11:   rSPECKEY_W   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 12:   rSPECKEY_E   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 13:   rSPECKEY_R   	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 14:   rSPECKEY_T   	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 15:   rSPECKEY_Y    	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 16:   rSPECKEY_U  		= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 17:   rSPECKEY_I  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 18:   rSPECKEY_O     	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 19:   rSPECKEY_P     	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		
+    		case 20:   rSPECKEY_A  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 21:   rSPECKEY_S   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 22:   rSPECKEY_D   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 23:   rSPECKEY_F  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 24:   rSPECKEY_G   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 25:   rSPECKEY_H   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 26:   rSPECKEY_J  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 27:   rSPECKEY_K   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 28:   rSPECKEY_L   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+            case 29:   rSPECKEY_ENTER   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;    		
+
+    		case 30:   rSPECKEY_SHIFT  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 31:   rSPECKEY_Z   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 32:   rSPECKEY_X   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 33:   rSPECKEY_C  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 34:   rSPECKEY_V   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 35:   rSPECKEY_B   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 36:   rSPECKEY_N  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 37:   rSPECKEY_M   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 38:   rSPECKEY_SYMB   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+            case 39:   rSPECKEY_SPACE   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+            case 40:   rShowController = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+            
+            case 41:   rHideKeyboard = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+            case 42:   rHideKeyboard2 = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		
+    		case 43:   rSPECKEY_SHIFT2  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] );break;
+    		case 44:   rSPECKEY_SYMB2   = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		            
+            case 45:   iphone_keyboard_opacity= coords[0];break;
 			}
       i++;
     }
@@ -911,7 +1371,8 @@ void* app_Thread_Start(void* args)
 
 
 - (void)dealloc {
-	
+    if(loop!=nil)
+	   [loop release];
 	[super dealloc];
 }
 
