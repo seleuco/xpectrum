@@ -31,7 +31,6 @@
 
 #import "MagnifierView.h"
 
-/*
 struct myGSPathPoint {
 	char unk0;
 	char unk1;
@@ -151,7 +150,7 @@ typedef struct {
 	char unk86;
 	struct myGSPathPoint points[100];
 } myGSEvent;
-*/
+
 
 @interface ScreenView : UIView
 {
@@ -252,9 +251,6 @@ typedef struct {
   CGRect rHideKeyboard;
   CGRect rHideKeyboard2;
 
-  CGPoint lastLocation1;
-  CGPoint lastLocation2;
-
   CoreSurfaceBufferRef			_screenSurface;
   CALayer						    *screenLayer;
   //NSTimer						*	timer;
@@ -276,6 +272,5 @@ typedef struct {
 - (void) handleAction:(id)timerObj;
 - (void)touchesKeyboard:(NSSet *)touches withEvent:(UIEvent *)event;
 - (void)touchesController:(NSSet *)touches withEvent:(UIEvent *)event;
-- (void)touchesController2:(NSSet *)touches withEvent:(UIEvent *)event;
 
 @end
