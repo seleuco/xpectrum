@@ -1,0 +1,88 @@
+
+PREFIX=/home/david/Projects/android/android-ndk-r3/build/prebuilt/linux-x86/arm-eabi-4.4.0/bin/arm-eabi-
+BASE_DEV=/home/david/Projects/android/android-ndk-r3/build/platforms/android-4/arch-arm/
+ANDROID_NDK_DIR=/home/david/Projects/android/android-ndk-r3
+
+BUILD_APP = xpectrum.so
+
+CC    := $(PREFIX)gcc
+LD    := $(PREFIX)gcc
+AS    := $(PREFIX)as
+AR    := $(PREFIX)ar
+
+OBJECTS =   main.o                          \
+            font.o                          \
+            Android/microlib.o               \
+            cpu/z80.o                       \
+            graphics.o                      \
+            zx.o                            \
+            ay8910.o                        \
+            fdc.o                           \
+            snaps.o                         \
+            player.o                        \
+	        bzip/blocksort.o                \
+	        bzip/huffman.o                  \
+	        bzip/crctable.o                 \
+	        bzip/randtable.o                \
+	        bzip/compress.o                 \
+	        bzip/decompress.o               \
+	        bzip/bzlib.o                    \
+ 	        mylibspectrum/tzx_read.o        \
+ 	        mylibspectrum/tape.o            \
+ 	        mylibspectrum/tape_block.o      \
+ 	        mylibspectrum/myglib.o          \
+	        mylibspectrum/tap.o             \
+	        mylibspectrum/tape_set.o        \
+	        mylibspectrum/symbol_table.o    \
+	        mylibspectrum/libspectrum.o     \
+	        mylibspectrum/zlib.o            \
+	        mylibspectrum/tape_accessors.o  \
+	        zxtape.o
+ 
+ #           usbjoy.o                        \
+ #           usbkeyb.o                       \
+
+LDFLAGS =  -nostdlib -lc -llog -lgcc 
+#LDFLAGS += -lc -llog -lgcc 
+#LDFLAGS += 
+#LDFLAGS += -lm -lc  -lz 
+#-lzip      
+LDFLAGS += -L$(ANDROID_NDK_DIR)/build/platforms/android-4/arch-arm/usr/lib
+LDFLAGS += -Wl,-rpath-link=$(ANDROID_NDK_DIR)/build/platforms/android-4/arch-arm/usr/lib
+
+CFLAGS =-march=armv5te -mtune=xscale -msoft-float -fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__  -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ 
+
+
+
+CFLAGS += -DANDROID
+
+CFLAGS += -I. -Icpu -Iincludes
+CFLAGS += -I$(BASE_DEV)/usr/include
+#CFLAGS += -isysroot $(BASE_DEV)
+CFLAGS += -O2
+#CFLAGS += -O3 -ffast-math 
+#CFLAGS += -DDEBUG_MSG 
+CFLAGS += -DGP2X -DSOUND_X128
+
+all: $(BUILD_APP)
+
+$(BUILD_APP): $(OBJECTS)
+	$(CC) -shared -o $@ $(OBJECTS) $(LDFLAGS) 
+
+%.o:/%.cpp
+	$(CC) -c $(CFLAGS) $< -o $@
+
+%.o:%.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+%.o:%.m
+	$(CC) -c $(CFLAGS) $< -o $@
+
+%.o:%.s
+	$(CC) -c $(CFLAGS) $< -o $@
+
+	
+clean:
+	rm -f $(OBJECTS) $(BUILD_APP)
+
+release: clean all

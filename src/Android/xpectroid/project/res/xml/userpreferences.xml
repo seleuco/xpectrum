@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	
+	<PreferenceCategory android:title="Portrait Settings">
+	
+        <ListPreference android:entries="@array/pref_scaleMode_options" android:title='Scaling mode' android:key="PREF_PORTRAIT_SCALING_MODE"
+                    android:entryValues="@array/pref_scaleMode_values" android:defaultValue="2" />
+
+		<CheckBoxPreference android:key="PREF_PORTRAIT_TOUCH_CONTROLLER"
+			android:title="Enable touch controller" android:summary="Select to turn on touch controller"
+			android:defaultValue="true" />                                         			
+                     			
+		<CheckBoxPreference android:key="PREF_PORTRAIT_TOUCH_KEYBOARD"
+			android:title="Enable touch keyboard" android:summary="Select to turn on touch keyboard"
+			android:defaultValue="true" />
+			
+	    <CheckBoxPreference android:key="PREF_PORTRAIT_BITMAP_FILTERING"
+			android:title="Enable bitmap filtering" android:summary="Select to turn on bitmap filtering"
+			android:defaultValue="false" />	
+
+	    <CheckBoxPreference android:key="PREF_PORTRAIT_CROP_X"
+			android:title="Crop vertical border" android:summary="Select to turn on crop on speccy vertical border"
+			android:defaultValue="true" />
+			
+	    <CheckBoxPreference android:key="PREF_PORTRAIT_CROP_Y"
+			android:title="Crop horizontal border" android:summary="Select to turn on crop on speccy horizontal border"
+			android:defaultValue="false" />				
+					
+	</PreferenceCategory>
+	
+	<PreferenceCategory android:title="Lansdscape Settings">
+	
+                     
+        <ListPreference android:entries="@array/pref_scaleMode_options" android:title='Scaling mode' android:key="PREF_LANDSCAPE_SCALING_MODE"
+                    android:entryValues="@array/pref_scaleMode_values" android:defaultValue="2" />
+                    
+		<CheckBoxPreference android:key="PREF_LANDSCAPE_TOUCH_CONTROLLER"
+			android:title="Enable touch controller" android:summary="Select to turn on touch controller"
+			android:defaultValue="true" />                                         			
+                     			
+		<CheckBoxPreference android:key="PREF_LANDSCAPE_TOUCH_KEYBOARD"
+			android:title="Enable touch keyboard" android:summary="Select to turn on touch keyboard"
+			android:defaultValue="true" />
+			
+	    <CheckBoxPreference android:key="PREF_LANDSCAPE_BITMAP_FILTERING"
+			android:title="Enable bitmap filtering" android:summary="Select to turn on bitmap filtering"
+			android:defaultValue="false" />		
+		<!-- 	
+		<ListPreference android:entries="@array/pref_landscape_controllerType_options" android:title='Touch controller type' android:key="PREF_LANDSCAPE_CONTROLLER_TYPE"
+                    android:entryValues="@array/pref_landscape_controllerType_values" android:defaultValue="1" />			                    
+         -->
+         
+	    <CheckBoxPreference android:key="PREF_LANDSCAPE_CROP_X"
+			android:title="Crop vertical border" android:summary="Select to turn on crop on speccy vertical border"
+			android:defaultValue="false" />
+			
+	    <CheckBoxPreference android:key="PREF_LANDSCAPE_CROP_Y"
+			android:title="Crop horizontal border" android:summary="Select to turn on crop on speccy horizontal border"
+			android:defaultValue="false" />         
+                                          			
+	</PreferenceCategory>
+		
+</PreferenceScreen>

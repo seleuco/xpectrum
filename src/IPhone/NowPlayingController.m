@@ -469,8 +469,8 @@ void* app_Thread_Start(void* args)
    [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
    [UIView setAnimationDuration:0.50];
 */
-   if(controller)
-      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_fs%d.png", 0]]];			
+   if(controller)//TEST CODE: cambio 0 por 1
+      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_fs%d.png", 2]]];			
    else
       imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_fs%d.png", 0]]];
    imageView.frame = CGRectMake(0.0f, 0.0f, 480.0f, 320.0f); // Set the frame in which the UIImage should be drawn in.
@@ -482,7 +482,10 @@ void* app_Thread_Start(void* args)
       [imageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
    else
       [imageView setAlpha:((float)iphone_keyboard_opacity / 100.0f)];
-  [self.view addSubview: imageView]; // Draw the image in self.view.
+  //TEST CODE
+  //if(!iphone_is_landscape)//remove this line
+  
+     [self.view addSubview: imageView]; // Draw the image in self.view.
   //[UIView commitAnimations];
 }
 
@@ -499,10 +502,15 @@ void* app_Thread_Start(void* args)
 		
 }
 
+
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {	    
   if(controller)
   {
+      //test code 
+      if(iphone_is_landscape)
+         [self touchesController2:touches withEvent:event];else
+      
       [self touchesController:touches withEvent:event];
   }
   else
@@ -554,7 +562,374 @@ void* app_Thread_Start(void* args)
      touchTimer = nil;
 }
 
+#define SJ_PI 3.14159265359f
+#define SJ_PI_X_2 6.28318530718f
+#define SJ_RAD2DEG 180.0f/SJ_PI
+#define SJ_DEG2RAD SJ_PI/180.0f
+int lastX = 0;
+int lastY = 0;
+int k = 0;
+- (void)touchesController2:(NSSet *)touches withEvent:(UIEvent *)event
+{	
 
+    if(!k)
+    {
+       k = 1;
+       lastLocation1.x = 71;//48;
+	   lastLocation1.y = 250;//280;
+    }
+
+    int i =0;
+    //printf("entrando: %d\n",gp2x_pad_status);
+    
+    //printf("llega evento\n");
+    CGRect r1 = CGRectMake(0,0,240,320);
+    CGRect r2 = CGRectMake(240,0,240,320);
+
+    //CGRect r1 = CGRectMake(0,240,160,240);
+    //CGRect r2 = CGRectMake(160,240,160,240);    
+    
+    int x = 1;
+    int y = 1;
+    
+   // gp2x_pad_status = 0;      
+  
+	NSSet *allTouches = [event allTouches];
+	int touchcount = [allTouches count];
+		for (i = 0; i < touchcount; i++) 
+	{
+		UITouch *touch = [[allTouches allObjects] objectAtIndex:i];
+	    struct CGPoint point;
+		point = [touch locationInView:self.view];
+		if(touch.phase == UITouchPhaseCancelled)
+		{
+		   //printf("cancelado fuera de recta!\n");
+		}
+		
+		
+		if (MyCGRectContainsPoint(r2, point)) {
+		   if(touch.phase != UITouchPhaseEnded)
+		   {
+		        //printf("1/fired\n");
+		        //printf("%d\n",gp2x_pad_status);
+		       gp2x_pad_status |= GP2X_B;
+		        //printf("%d\n",gp2x_pad_status);
+		       //printf("2/fired\n");
+		   }    
+		   else
+		   {
+		        //printf("1/ended fired\n");
+		       //printf("%d\n",gp2x_pad_status);
+		       gp2x_pad_status &= ~GP2X_B;
+		       //printf("%d\n",gp2x_pad_status);
+		       //printf("2/ended fired\n");
+		   }    
+		}
+		else
+		if (MyCGRectContainsPoint(r1, point)) {
+            /*		
+		    if(touch.phase == UITouchPhaseBegan)
+		    {
+		       //printf("beagan\n");
+		       lastLocation1 = point;
+		       //gp2x_pad_status |= lastX;
+		       //gp2x_pad_status |= lastY;
+		    }  
+		    
+		    else */ if(touch.phase == UITouchPhaseMoved || touch.phase == UITouchPhaseBegan)
+		    {
+
+		       int rad = 1;   		       
+               //printf("moved\n");
+               CGFloat xDisplacement = point.x - lastLocation1.x;
+               CGFloat yDisplacement = point.y - lastLocation1.y;
+               
+               CGFloat xDisplacementAbs = fabs(xDisplacement);
+               CGFloat yDisplacementAbs = fabs(yDisplacement);
+               
+               
+               float angle = atan2f(xDisplacement, yDisplacement); // in radians
+               angle = angle * SJ_RAD2DEG;
+               
+               
+               
+               float r =  sqrt((xDisplacement* xDisplacement)+ (yDisplacement * yDisplacement));
+               
+               /*
+               if(r > rad)
+               {
+               printf("\n pto %f,%f\n",xDisplacement,yDisplacement);
+               printf("angulo %f\n",angle);
+               printf("radio %f\n",r);
+               }
+               */
+               
+               
+               
+               int b1 = r > rad;
+               int b2 = r > rad;
+               //printf("moved %f %f\n",xDisplacement,yDisplacement);
+               /*
+               if(xDisplacementAbs > yDisplacementAbs &&  yDisplacementAbs < 1)
+               {
+                  b1 = 1; b2=0;
+                  //gp2x_pad_status &= ~GP2X_DOWN;
+		          //gp2x_pad_status &= ~GP2X_UP;
+
+               }
+               else if(xDisplacementAbs < yDisplacementAbs && xDisplacementAbs < 1)
+               {
+                  b1 = 0; b2=1;
+                  //gp2x_pad_status &= ~GP2X_LEFT;
+		          //gp2x_pad_status &= ~GP2X_RIGHT;
+               }                   
+               else
+               {
+                   b1=1;b2=1;
+               }           
+               */
+               
+               if(b1)
+               {
+	               if(angle < -30 && angle > -150)
+	               //if(angle < -15 && angle > -165)
+	               {
+	                   //printf("izq\n");
+	                   gp2x_pad_status |= GP2X_LEFT;
+	                   gp2x_pad_status &= ~GP2X_RIGHT;
+	                   lastX = GP2X_LEFT;
+	                   //if(xDisplacementAbs<-2)
+	                       lastLocation1 = point;
+	                   x=1;
+	               }    
+	               else  if(angle > 30  && angle < 150)
+	               //else  if(angle > 15  && angle < 165)
+	               {
+	                   //printf("der\n");
+	                   gp2x_pad_status |= GP2X_RIGHT;
+	                   gp2x_pad_status &= ~GP2X_LEFT;
+	                   lastX = GP2X_RIGHT;
+	                   //if(xDisplacementAbs>2)
+	                       lastLocation1 = point;
+	                   x=1;
+	               }
+	               else
+	               {
+	                 //printf("NOderizq\n");
+	                 //lastX = 0;
+	                 x = 0;
+	                 //gp2x_pad_status &= ~GP2X_LEFT;
+		             //gp2x_pad_status &= ~GP2X_RIGHT;
+	               }  
+               }
+               
+               if(b2)
+               {   
+                   if(angle < -120 || angle > 120)
+	               //if(angle < -135 || angle > 135)
+	               {
+	                   //printf("up\n");
+	                   gp2x_pad_status |= GP2X_UP;
+	                   gp2x_pad_status &= ~GP2X_DOWN;
+	                   lastY = GP2X_UP;
+	                   //if(yDisplacementAbs<-16)
+	                       lastLocation1 = point;
+	                   y=1;
+	                  
+	               }
+	               else  if(angle > -60 && angle < 60)    
+	               //else  if(angle > -75 && angle < 75)
+	               {
+	                   //printf("down\n");
+	                   gp2x_pad_status |= GP2X_DOWN;
+	                   gp2x_pad_status &= ~GP2X_UP;
+	                   lastY = GP2X_DOWN;
+	                   //if(yDisplacementAbs>16)
+	                      lastLocation1 = point;
+	                   y=1;
+	               }
+                   else
+                   { 
+                      //printf("NO updown\n");
+                      y = 0;
+                      //lastY = 0;
+                      //gp2x_pad_status &= ~GP2X_DOWN;
+		              //gp2x_pad_status &= ~GP2X_UP;
+                   }                      
+               }
+               
+               if(x && !y)
+               {
+                  //printf("NO Y!\n");
+
+		          gp2x_pad_status &= ~GP2X_DOWN;
+		          gp2x_pad_status &= ~GP2X_UP;
+               }
+               if(!x && y)
+               {
+                  //printf("NO X!\n");
+                  gp2x_pad_status &= ~GP2X_LEFT;
+		          gp2x_pad_status &= ~GP2X_RIGHT;
+               }
+		    }	
+		    else if(touch.phase == UITouchPhaseStationary)
+		    {
+		       //printf("stationary\n");
+		       //gp2x_pad_status &= lastX;
+		       //gp2x_pad_status &= lastY;
+		    }
+		    else if(touch.phase == UITouchPhaseEnded)
+		    {
+		        //printf("ended\n");
+		        gp2x_pad_status &= ~GP2X_LEFT;
+		        gp2x_pad_status &= ~GP2X_RIGHT;
+		        gp2x_pad_status &= ~GP2X_DOWN;
+		        gp2x_pad_status &= ~GP2X_UP;
+		        
+		        lastLocation1.x = 71;
+		        lastLocation1.y = 250;
+		        
+		        //printf("ended control\n");
+		    }
+		    //else	printf("otro\n");
+
+		      
+		}				
+	}	
+	/*
+	if(x==1 && y==0)
+	{
+	   gp2x_pad_status &= ~GP2X_UP;
+	   gp2x_pad_status &= ~GP2X_DOWN;
+	}
+	
+	if(y==1 && x==0)
+	{
+	    gp2x_pad_status &= ~GP2X_LEFT;
+		gp2x_pad_status &= ~GP2X_RIGHT;	
+	}
+	*/
+	
+	//printf("saliendo: %d\n",gp2x_pad_status);
+}
+
+/*
+
+int lastX = 0;
+int lastY = 0;
+- (void)touchesController2:(NSSet *)touches withEvent:(UIEvent *)event
+{	
+
+    int i =0;
+    
+    //printf("llega evento\n");
+    CGRect r1 = CGRectMake(0,256,320,64);      
+    //CGRect r1 = CGRectMake(0,416,320,64);
+     CGRect r2 = CGRectMake(416,0,64,320);  
+  
+	NSSet *allTouches = [event allTouches];
+	int touchcount = [allTouches count];
+		for (i = 0; i < touchcount; i++) 
+	{
+		UITouch *touch = [[allTouches allObjects] objectAtIndex:i];
+	    struct CGPoint point;
+		point = [touch locationInView:self.view];
+		if(touch.phase == UITouchPhaseCancelled)
+		{
+		   //printf("cancelado fuera de recta!\n");
+		}
+		
+		if (MyCGRectContainsPoint(r1, point)) {
+		
+		    if(touch.phase == UITouchPhaseBegan)
+		    {
+		       //printf("beagan\n");
+		       lastLocation1 = point;
+		       //gp2x_pad_status = lastX;
+		    }   
+		    else if(touch.phase == UITouchPhaseMoved)
+		    {
+		       
+               //printf("moved\n");
+               CGFloat xDisplacement = point.x - lastLocation1.x;
+               
+               if(xDisplacement<-2)
+               {
+                   //printf("izq\n");
+                   gp2x_pad_status |= GP2X_LEFT;
+                   gp2x_pad_status &= ~GP2X_RIGHT;
+                   lastX = GP2X_LEFT;
+                   lastLocation1 = point;
+               }    
+               else  if(xDisplacement>2)
+               {
+                   //printf("der\n");
+                   gp2x_pad_status |= GP2X_RIGHT;
+                   gp2x_pad_status &= ~GP2X_LEFT;
+                   lastX = GP2X_RIGHT;
+                   lastLocation1 = point;
+               }    
+        
+		    }	
+		    else if(touch.phase == UITouchPhaseStationary)
+		    {
+		       //printf("tationary\n");
+		    }
+		    else if(touch.phase == UITouchPhaseEnded)
+		    {
+		        //printf("cancelled\n");
+		        gp2x_pad_status &= ~GP2X_LEFT;
+		        gp2x_pad_status &= ~GP2X_RIGHT;
+		    }
+		    //else	printf("otro\n");
+		      
+		}		
+		
+	    if (MyCGRectContainsPoint(r2, point)) {
+		
+		    if(touch.phase == UITouchPhaseBegan)
+		    {
+		       //printf("beagan\n");
+		       lastLocation2 = point;
+		       //gp2x_pad_status = lastY;
+		    }   
+		    else if(touch.phase == UITouchPhaseMoved)
+		    {
+		       
+               //printf("moved\n");
+               CGFloat yDisplacement = point.y - lastLocation2.y;
+               
+               if(yDisplacement<-2)
+               {
+                   //printf("izq\n");
+                   gp2x_pad_status |= GP2X_UP;
+                   gp2x_pad_status &= ~GP2X_DOWN;
+                   lastY = GP2X_UP;
+                   lastLocation2 = point;
+               }    
+               else  if(yDisplacement>2)
+               {
+                   //printf("der\n");
+                   gp2x_pad_status |= GP2X_DOWN;
+                   gp2x_pad_status &= ~GP2X_UP;
+                   lastY = GP2X_DOWN;
+                   lastLocation2 = point;
+               }    
+        
+		    }	
+		    else if(touch.phase == UITouchPhaseEnded)
+		    {
+		        //printf("cancelled\n");
+		        gp2x_pad_status &= ~GP2X_DOWN;
+		        gp2x_pad_status &= ~GP2X_UP;
+		    }
+		    //else	printf("otro\n");
+		      
+		}
+		
+	}	
+}
+*/
 - (void)touchesKeyboard:(NSSet *)touches withEvent:(UIEvent *)event {	
 	int i;
 	//Get all the touches.

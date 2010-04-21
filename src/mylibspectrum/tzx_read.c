@@ -655,7 +655,9 @@ tzx_read_generalised_data( libspectrum_tape *tape,
 
   symbol_count2 = libspectrum_tape_generalised_data_symbol_table_symbols_in_table( table );
 
+//#ifndef ANDROID
   bits_per_symbol = ceil( log( symbol_count2 ) / M_LN2 );
+//#endif
 
   libspectrum_tape_block_set_bits_per_data_symbol( block, bits_per_symbol );
 
