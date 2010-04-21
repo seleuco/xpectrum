@@ -1,0 +1,76 @@
+ifeq ($(TARGET),WIZ)
+PREFIX=arm-openwiz-linux-gnu-
+BASE_DEV=/opt/openwiz/toolchain/arm-openwiz-linux-gnu
+BUILD_EXT=.gpe
+PLATFORM=__ARM__
+EXTRA_OBJS=flush_uppermem_cache.o
+EXTRA_LIBS=-liconv
+else
+PREFIX=
+BASE_DEV=/usr
+BUILD_EXT=
+PLATFORM=__I386__
+EXTRA_OBJS=
+EXTRA_LIBS=
+endif
+
+BUILD_APP = gp2xpectrum$(BUILD_EXT)
+
+CC    := $(PREFIX)gcc
+LD    := $(PREFIX)gcc
+AS    := $(PREFIX)as
+AR    := $(PREFIX)ar
+
+OBJECTS =   main.o                          \
+            font.o                          \
+            $(EXTRA_OBJS)                   \
+            usbjoy.o                        \
+            usbkeyb.o                       \
+            SDL/microlib.o                      \
+            cpu/z80.o                       \
+            graphics.o                      \
+            zx.o                            \
+            ay8910.o                        \
+            fdc.o                           \
+            snaps.o                         \
+            player.o                        \
+	        bzip/blocksort.o                \
+	        bzip/huffman.o                  \
+	        bzip/crctable.o                 \
+	        bzip/randtable.o                \
+	        bzip/compress.o                 \
+	        bzip/decompress.o               \
+	        bzip/bzlib.o                    \
+ 	        mylibspectrum/tzx_read.o        \
+ 	        mylibspectrum/tape.o            \
+ 	        mylibspectrum/tape_block.o      \
+ 	        mylibspectrum/myglib.o          \
+	        mylibspectrum/tap.o             \
+	        mylibspectrum/tape_set.o        \
+	        mylibspectrum/symbol_table.o    \
+	        mylibspectrum/libspectrum.o     \
+	        mylibspectrum/zlib.o            \
+	        mylibspectrum/tape_accessors.o  \
+	        zxtape.o
+
+CFLAGS = -O2 -DDEBUG_MSG -DGP2X -D$(PLATFORM) -DSOUND_X128 -I. -Icpu -Iincludes  -I$(BASE_DEV)/include/SDL -I$(BASE_DEV)/include
+LDFLAGS = -lm -lc -lrt -L$(BASE_DEV)/lib -lz -lSDL $(EXTRA_LIBS) #-lzip
+
+all: $(BUILD_APP)
+
+$(BUILD_APP): $(OBJECTS)
+	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
+
+%.o:/%.cpp
+	$(CC) -c $(CFLAGS) $< -o $@
+
+%.o:%.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+%.o:%.s
+	$(CC) -c $(CFLAGS) $< -o $@
+
+clean:
+	rm -f $(OBJECTS) $(BUILD_APP)
+
+release: clean all
