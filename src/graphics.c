@@ -18,7 +18,6 @@
  Copyright (c) 2000 Santiago Romero Iglesias.
  Copyright (c) 2005 rlyeh
  Copyright (c) 2006-2007 Metalbrain
- Copyright (c) 2010 Seleuco
  ======================================================================*/
 #define BORDERDELAY 5
 
@@ -84,8 +83,6 @@ char SpectrumFlashFlag=0;
  CreateVideoTables ( void );
  Creates tables for direct access to videomemory pixels and attr.
 ------------------------------------------------------------------*/
-
-extern set_emupalette();
 
 unsigned short Pixeles[192],Atributos[192];
 
@@ -158,12 +155,6 @@ JustRun(Z80Regs * regs, int do_skip)
     
     Z80Run_NC (spectrumZ80, spectrumZ80->ICount);       // End & Try interrupt?
     
-	if(zx_palette_change)
-	{
-	   set_emupalette();
-	   zx_palette_change = 0;
-	}
-
     if(!do_skip)
     {
         if(!full_screen)
@@ -190,28 +181,14 @@ JustRun(Z80Regs * regs, int do_skip)
                     {
                         border=outwritevalue[idxout++];
                     }
-                    if(zx_ula64_enabled)
-                    {
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-                    }
-                    else
-                    {
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
                     target_tstate+=4;
                 }
                 target_tstate+=hwopt.ts_line-160;
@@ -232,28 +209,14 @@ JustRun(Z80Regs * regs, int do_skip)
                     {
                         border=outwritevalue[idxout++];
                     }
-                    if(zx_ula64_enabled)
-                    {
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-                    }
-                    else
-                    {
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
                     target_tstate+=4;
                 }
                 while((spectrumZ80->IPeriod - pagewritetime[idxpage]) < target_tstate)
@@ -269,33 +232,13 @@ JustRun(Z80Regs * regs, int do_skip)
                 attr=ToBeDrawn[startattr+page];
                 if(SpectrumFlashFlag)
                 {
-                    if(! zx_ula64_enabled)
+                    if(attr&0x80)
                     {
-                       if(attr&0x80)
-                       {
-                          bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-                       }
-                       else
-                       {
-                          fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                       }
+                        bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
                     }
-                    else
+                    else    
                     {
-
-                    	if(zx_palette_change)
-                    	{
-                    	   set_emupalette();
-                    	   zx_palette_change = 0;
-                    	}
-
-                    	byte ink = attr & 0x07;
-                    	byte paper = (attr & 0x38)>>3;
-                    	byte table = (attr & 0xC0)>>6;
-
-                    	fg = table*16+ink;
-                    	bg = table*16+paper+8;
-
+                        fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                     }
                     *(offset++)=bytevalue & 0x80 ? fg : bg;
                     *(offset++)=bytevalue & 0x40 ? fg : bg;
@@ -319,34 +262,13 @@ JustRun(Z80Regs * regs, int do_skip)
                         }
                         bytevalue=ToBeDrawn[startbytes+x+page];
                         attr=ToBeDrawn[startattr+x+page];
-
-                        if(! zx_ula64_enabled)
+                        if(attr&0x80)
                         {
-                           if(attr&0x80)
-                           {
-                              bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-                           }
-                           else
-                           {
-                              fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                           }
+                            bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
                         }
-                        else
+                        else    
                         {
-
-                        	if(zx_palette_change)
-                        	{
-                        	   set_emupalette();
-                        	   zx_palette_change = 0;
-                        	}
-
-                        	byte ink = attr & 0x07;
-                        	byte paper = (attr & 0x38)>>3;
-                        	byte table = (attr & 0xC0)>>6;
-
-                        	fg = table*16+ink;
-                        	bg = table*16+paper+8;
-
+                            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                         }
                         *(offset++)=bytevalue & 0x80 ? fg : bg;
                         *(offset++)=bytevalue & 0x40 ? fg : bg;
@@ -361,27 +283,7 @@ JustRun(Z80Regs * regs, int do_skip)
                 }
                 else    
                 {
-                    if(! zx_ula64_enabled)
-                    {
-                    	fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                    }
-                    else
-                    {
-
-                    	if(zx_palette_change)
-                    	{
-                    	   set_emupalette();
-                    	   zx_palette_change = 0;
-                    	}
-
-                    	byte ink = attr & 0x07;
-                    	byte paper = (attr & 0x38)>>3;
-                    	byte table = (attr & 0xC0)>>6;
-
-                    	fg = table*16+ink;
-                    	bg = table*16+paper+8;
-
-                    }
+                    fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                     *(offset++)=bytevalue & 0x80 ? fg : bg;
                     *(offset++)=bytevalue & 0x40 ? fg : bg;
                     *(offset++)=bytevalue & 0x20 ? fg : bg;
@@ -404,28 +306,7 @@ JustRun(Z80Regs * regs, int do_skip)
                         }
                         bytevalue=ToBeDrawn[Pixeles[scanl]+x+page];
                         attr=ToBeDrawn[Atributos[scanl]+x+page];
-
-                        if(! zx_ula64_enabled)
-                        {
-                        	fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                        }
-                        else
-                        {
-
-                        	if(zx_palette_change)
-                        	{
-                        	   set_emupalette();
-                        	   zx_palette_change = 0;
-                        	}
-
-                        	byte ink = attr & 0x07;
-                        	byte paper = (attr & 0x38)>>3;
-                        	byte table = (attr & 0xC0)>>6;
-
-                        	fg = table*16+ink;
-                        	bg = table*16+paper+8;
-
-                        }
+                        fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                         *(offset++)=bytevalue & 0x80 ? fg : bg;
                         *(offset++)=bytevalue & 0x40 ? fg : bg;
                         *(offset++)=bytevalue & 0x20 ? fg : bg;
@@ -444,28 +325,14 @@ JustRun(Z80Regs * regs, int do_skip)
                     {
                         border=outwritevalue[idxout++];
                     }
-                    if(zx_ula64_enabled)
-                    {
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-                    }
-                    else
-                    {
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
                     target_tstate+=4;
                 }
                 target_tstate+=hwopt.ts_line-160;
@@ -478,28 +345,14 @@ JustRun(Z80Regs * regs, int do_skip)
                     border=outwritevalue[idxout];
                     idxout++;
                 }
-                if(zx_ula64_enabled)
-                {
-					*(offset++)=border+8;
-					*(offset++)=border+8;
-					*(offset++)=border+8;
-					*(offset++)=border+8;
-					*(offset++)=border+8;
-					*(offset++)=border+8;
-					*(offset++)=border+8;
-					*(offset++)=border+8;
-                }
-                else
-                {
-                    *(offset++)=border;
-                    *(offset++)=border;
-                    *(offset++)=border;
-                    *(offset++)=border;
-                    *(offset++)=border;
-                    *(offset++)=border;
-                    *(offset++)=border;
-                    *(offset++)=border;
-                }
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
+                *(offset++)=border;
                 target_tstate+=4;
                 for(x=1;x<40;x++)
                 {
@@ -507,28 +360,14 @@ JustRun(Z80Regs * regs, int do_skip)
                     {
                         border=outwritevalue[idxout++];
                     }
-                    if(zx_ula64_enabled)
-                    {
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-						*(offset++)=border+8;
-                    }
-                    else
-                    {
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                        *(offset++)=border;
-                    }
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
+                    *(offset++)=border;
                     target_tstate+=4;
                 }
                 target_tstate+=hwopt.ts_line-160;
@@ -566,33 +405,13 @@ JustRun(Z80Regs * regs, int do_skip)
                     attr=ToBeDrawn[startattr+page];
                     if(SpectrumFlashFlag)
                     {
-                        if(! zx_ula64_enabled)
+                        if(attr&0x80)
                         {
-                          if(attr&0x80)
-                          {
                             bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-                          }
-                          else
-                          {
-                            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                          }
                         }
-                        else
+                        else    
                         {
-
-                        	if(zx_palette_change)
-                        	{
-                        	   set_emupalette();
-                        	   zx_palette_change = 0;
-                        	}
-
-                        	byte ink = attr & 0x07;
-                        	byte paper = (attr & 0x38)>>3;
-                        	byte table = (attr & 0xC0)>>6;
-
-                        	fg = table*16+ink;
-                        	bg = table*16+paper+8;
-
+                            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                         }
                         *(offset++)=bytevalue & 0x80 ? fg : bg;
                         *(offset++)=bytevalue & 0x40 ? fg : bg;
@@ -621,34 +440,13 @@ JustRun(Z80Regs * regs, int do_skip)
                             }
                             bytevalue=ToBeDrawn[startbytes+x+page];
                             attr=ToBeDrawn[startattr+x+page];
-
-
-                            if(! zx_ula64_enabled)
+                            if(attr&0x80)
                             {
-                                if(attr&0x80)
-                                {
-                                    bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
-                                }
-                                else
-                                {
-                                    fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                                }
+                                bg=(attr&0x7)+((attr>>3)&0x8); fg=((attr>>3)&0x0F);
                             }
-                            else
+                            else    
                             {
-                            	if(zx_palette_change)
-                            	{
-                            	   set_emupalette();
-                            	   zx_palette_change = 0;
-                            	}
-
-                            	byte ink = attr & 0x07;
-                            	byte paper = (attr & 0x38)>>3;
-                            	byte table = (attr & 0xC0)>>6;
-
-                            	fg = table*16+ink;
-                            	bg = table*16+paper+8;
-
+                                fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                             }
                             *(offset++)=bytevalue & 0x80 ? fg : bg;
                             *(offset++)=bytevalue & 0x40 ? fg : bg;
@@ -660,32 +458,12 @@ JustRun(Z80Regs * regs, int do_skip)
                             *(offset++)=bytevalue & 0x2  ? fg : bg;
                             *(offset++)=bytevalue & 0x1  ? fg : bg;
                             *(offset++)=bytevalue & 0x1  ? fg : bg;
-
                             if ( !n ) target_tstate+=4;
                         }
                     }
                     else    
                     {
-                        if(! zx_ula64_enabled)
-                        {
-                        	fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                        }
-                        else
-                        {
-                        	if(zx_palette_change)
-                        	{
-                        	   set_emupalette();
-                        	   zx_palette_change = 0;
-                        	}
-
-                        	byte ink = attr & 0x07;
-                        	byte paper = (attr & 0x38)>>3;
-                        	byte table = (attr & 0xC0)>>6;
-
-                        	fg = table*16+ink;
-                        	bg = table*16+paper+8;
-                        }
-
+                        fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                         *(offset++)=bytevalue & 0x80 ? fg : bg;
                         *(offset++)=bytevalue & 0x40 ? fg : bg;
                         *(offset++)=bytevalue & 0x20 ? fg : bg;
@@ -713,28 +491,7 @@ JustRun(Z80Regs * regs, int do_skip)
                             }
                             bytevalue=ToBeDrawn[startbytes+x+page];
                             attr=ToBeDrawn[startattr+x+page];
-
-                            if(! zx_ula64_enabled)
-                            {
-                            	fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
-                            }
-                            else
-                            {
-
-                            	if(zx_palette_change)
-                            	{
-                            	   set_emupalette();
-                            	   zx_palette_change = 0;
-                            	}
-
-                            	byte ink = attr & 0x07;
-                            	byte paper = (attr & 0x38)>>3;
-                            	byte table = (attr & 0xC0)>>6;
-
-                            	fg = table*16+ink;
-                            	bg = table*16+paper+8;
-
-                            }
+                            fg=(attr&0x7)+((attr>>3)&0x8); bg=((attr>>3)&0x0F);
                             *(offset++)=bytevalue & 0x80 ? fg : bg;
                             *(offset++)=bytevalue & 0x40 ? fg : bg;
                             *(offset++)=bytevalue & 0x20 ? fg : bg;
@@ -745,7 +502,6 @@ JustRun(Z80Regs * regs, int do_skip)
                             *(offset++)=bytevalue & 0x2  ? fg : bg;
                             *(offset++)=bytevalue & 0x1  ? fg : bg;
                             *(offset++)=bytevalue & 0x1  ? fg : bg;
-
                             if ( !n ) target_tstate+=4;
                         }
                     }
@@ -847,5 +603,3 @@ void DrawZXtoScreen(byte * target, byte * source, int scale, int align)
         target += 32; /* Skip right border */
     }
 }
-
-

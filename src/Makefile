@@ -1,18 +1,24 @@
 
-PREFIX=/home/david/Projects/android/android-ndk-r3/build/prebuilt/linux-x86/arm-eabi-4.4.0/bin/arm-eabi-
-BASE_DEV=/home/david/Projects/android/android-ndk-r3/build/platforms/android-4/arch-arm/
-ANDROID_NDK_DIR=/home/david/Projects/android/android-ndk-r3
+PREFIX=/home/david/Projects/iphone/toolchain/toolchain/pre/bin/arm-apple-darwin9-
+#BASE_DEV=/home/david/Projects/iphone/toolchain/sdks/iPhoneOS3.1.2.sdk
+BASE_DEV=/home/david/Projects/iphone/toolchain/sdks/iPhoneOS2.0.sdk
 
-BUILD_APP = xpectrum.so
+BUILD_APP = iXpectrum
 
 CC    := $(PREFIX)gcc
 LD    := $(PREFIX)gcc
 AS    := $(PREFIX)as
 AR    := $(PREFIX)ar
 
-OBJECTS =   main.o                          \
+OBJECTS =   IPhone/iph_main.o   \
+            IPhone/Bootstrapper.o   \
+            IPhone/NowPlayingController.o   \
+            IPhone/HelpController.o \
+            IPhone/OptionsController.o \
+            IPhone/helpers.o   \
+            main.o                          \
             font.o                          \
-            Android/microlib.o               \
+            IPhone/microlib.o               \
             cpu/z80.o                       \
             graphics.o                      \
             zx.o                            \
@@ -42,32 +48,27 @@ OBJECTS =   main.o                          \
  #           usbjoy.o                        \
  #           usbkeyb.o                       \
 
-LDFLAGS =  -nostdlib -lc -llog -lgcc 
-#LDFLAGS += -lc -llog -lgcc 
-#LDFLAGS += 
-#LDFLAGS += -lm -lc  -lz 
+LDFLAGS = -lobjc -lpthread -bind_at_load 
+LDFLAGS += -framework Foundation -framework CoreFoundation -framework CoreSurface -framework UIKit  -framework QuartzCore -framework CoreGraphics -framework AudioToolbox    
+LDFLAGS += -lm -lc  -lz 
 #-lzip      
-LDFLAGS += -L$(ANDROID_NDK_DIR)/build/platforms/android-4/arch-arm/usr/lib
-LDFLAGS += -Wl,-rpath-link=$(ANDROID_NDK_DIR)/build/platforms/android-4/arch-arm/usr/lib
+LDFLAGS += -F$(BASE_DEV)/System/Library/Frameworks
+LDFLAGS += -F$(BASE_DEV)/System/Library/PrivateFrameworks
+lDFLAGS += -L$(BASE_DEV)/usr/lib 
 
-CFLAGS =-march=armv5te -mtune=xscale -msoft-float -fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__  -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ 
-
-
-
-CFLAGS += -DANDROID
-
+CFLAGS = -march=armv6 -DARM_ARCH -DIPHONE
 CFLAGS += -I. -Icpu -Iincludes
-CFLAGS += -I$(BASE_DEV)/usr/include
+CFLAGS += -I$(BASE_DEV)/usr/lib/gcc/arm-apple-darwin9/4.0.1/include 
 #CFLAGS += -isysroot $(BASE_DEV)
-CFLAGS += -O2
-#CFLAGS += -O3 -ffast-math 
+#CFLAGS += -O2
+CFLAGS += -O3 -ffast-math 
 #CFLAGS += -DDEBUG_MSG 
 CFLAGS += -DGP2X -DSOUND_X128
 
 all: $(BUILD_APP)
 
 $(BUILD_APP): $(OBJECTS)
-	$(CC) -shared -o $@ $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
 
 %.o:/%.cpp
 	$(CC) -c $(CFLAGS) $< -o $@
