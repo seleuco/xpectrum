@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum;
@@ -34,7 +34,7 @@ import android.widget.TextView;
 
 import com.admob.android.ads.AdManager;
 
-public class AdActivity extends Activity {
+public class HelpActivity extends Activity {
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -55,7 +55,7 @@ public class AdActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		
-		setContentView(R.layout.ad);
+		setContentView(R.layout.help);
 		
 		AdManager.setTestDevices( new String[] { AdManager.TEST_EMULATOR } );
 

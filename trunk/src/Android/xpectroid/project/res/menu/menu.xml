@@ -11,5 +11,6 @@
 		</menu>
 	</item>
 	<item android:id="@+id/menu_settings_option" android:title="@string/menu_settings" android:icon="@android:drawable/ic_menu_preferences"/>
+	<item android:id="@+id/menu_help_option" android:title="@string/menu_help" android:icon="@android:drawable/ic_menu_help"/>
 	<item android:id="@+id/menu_quit_option" android:title="@string/menu_quit"   android:icon="@android:drawable/ic_menu_close_clear_cancel" />
 </menu>

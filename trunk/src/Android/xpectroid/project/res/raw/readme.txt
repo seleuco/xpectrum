@@ -1,6 +1,28 @@
-   Xpectroid v1.0 for Android by David Valdeita (Seleuco)
+   Xpectroid v1.1 for Android by David Valdeita (Seleuco)
 
 Based on iXpectrum from Seleuco and gp2xpectrum by Hermes/PS2Reality, Metalbrain & Seleuco.
+
+1.1 what's new
+--------------
+
+- Improved overall performance. 50 real fps in N1.
+
+- New auto frame skip mode for slower devices. 12 levels.
+
+- Improved multitouch responsiveness.
+
+- Improved Android 1.5 cupcake support.
+
+- New landscape touch controller suited for no multitouch or slower devices (no alpha blending is needed). The older one 
+  can be selected at the menu if you prefer. In the new controller, you can tap in center of the emulator view to show the touch keyboard.
+  Also, multitouch devices can fire touching on the right side of the emulator view.
+  
+- New option for redefine hardware keys.
+
+- Trackball support.
+  
+- Improved touch keyboard. New auto Caps Shift and Symbol Shift keys. Android delete key mapped to Caps Shift + 0. 
+
 
 Xpectroid is a ZX Spectrum emulator for Android with the following features:
 

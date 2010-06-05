@@ -12,14 +12,12 @@
 	</string-array>
 	
 	<string-array name="pref_landscape_controllerType_options">
-		<item>MultiTouch 1</item>
-		<item>MultiTouch 2</item>
-		<item>No MultiTouch</item>
+		<item>No multitouch capable touch controller</item>
+		<item>Transparent touch controller suited for multitouch</item>
 	</string-array>
 	<string-array name="pref_landscape_controllerType_values">
 		<item>1</item>
 		<item>2</item>
-		<item>3</item>
 	</string-array>
 	
 </resources>
