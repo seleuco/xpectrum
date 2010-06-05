@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum.helpers;
@@ -30,21 +30,26 @@ import java.util.zip.ZipInputStream;
 
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Environment;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout.LayoutParams;
 
 import com.seleuco.xpectrum.Emulator;
 import com.seleuco.xpectrum.R;
 import com.seleuco.xpectrum.Xpectroid;
 import com.seleuco.xpectrum.input.InputHandler;
+import com.seleuco.xpectrum.util.UnscaledBitmapLoader;
 import com.seleuco.xpectrum.views.EmulatorView;
 import com.seleuco.xpectrum.views.InputView;
 
 public class MainHelper {
 	
 	final static public  int SUBACTIVITY_USER_PREFS = 1;
-	final static public  int SUBACTIVITY_AD = 2;
+	final static public  int SUBACTIVITY_HELP = 2;
 	final static public  int BUFFER_SIZE = 1024*48;
 	
 	final static public  String ROMS_DIR = "/ROMs/Xpectroid/";
@@ -210,6 +215,14 @@ public class MainHelper {
 		InputHandler inputHandler = xoid.getInputHandler();
 		PrefsHelper prefshelper = xoid.getPrefsHelper();
 		
+		String definedKeys = prefshelper.getDefinedKeys();
+		final String[] keys = definedKeys.split(":");
+		for(int i=0;i<keys.length;i++)
+			InputHandler.keyMapping[i]=Integer.valueOf(keys[i]).intValue();
+		
+		inputHandler.setTrackballSensitivity( prefshelper.getTrackballSensitivity());
+		inputHandler.setTrackballEnabled(!prefshelper.isTrackballNoMove());
+				
 		int state = xoid.getInputHandler().getInputHandlerState();
 		
 		if(this.getscrOrientation() == Configuration.ORIENTATION_PORTRAIT)
@@ -239,15 +252,22 @@ public class MainHelper {
 
 			if(state == InputHandler.STATE_SHOWING_CONTROLLER)
 			{			    	
-			    											
-			   	inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.controller_hs0));
+			   	//inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.controller_hs0));
+				
+				Bitmap bmp = UnscaledBitmapLoader.loadFromResource(xoid.getResources(), R.drawable.controller_hs0, null);
+				BitmapDrawable bmpDrw = new BitmapDrawable(bmp);									
+				inputView.setImageDrawable(bmpDrw);
 			    	
 			   	inputHandler.readControllerValues(R.raw.controller_hs0);
 			}
 			else if(state == InputHandler.STATE_SHOWING_KEYBOARD)
 			{
 			    				    				    	
-			   	inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.keyboard_hs0));
+			   	//inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.keyboard_hs0));
+			   	
+				Bitmap bmp = UnscaledBitmapLoader.loadFromResource(xoid.getResources(), R.drawable.keyboard_hs0, null);
+				BitmapDrawable bmpDrw = new BitmapDrawable(bmp);									
+				inputView.setImageDrawable(bmpDrw);
 			    	
 			  	inputHandler.readKeyboardValues(R.raw.keyboard_hs0);
 			}
@@ -270,6 +290,11 @@ public class MainHelper {
 			
 			state = xoid.getInputHandler().getInputHandlerState();
 			
+		    inputView.bringToFront();
+		    LayoutParams lp  = (LayoutParams) emuView.getLayoutParams();
+			lp.gravity = Gravity.CENTER;
+			lp.leftMargin = 0;
+			
 			if(state == InputHandler.STATE_SHOWING_NONE)
 			{	
 				inputView.setVisibility(View.GONE);
@@ -281,15 +306,59 @@ public class MainHelper {
 
 			if(state == InputHandler.STATE_SHOWING_CONTROLLER)
 			{			    	
-			    											
-			   	inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.controller_fs0));
+			    		
+				int i = prefshelper.getLandscapeControllerType();
+				
+				if(i==1)										
+				{				   	
+					//inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.controller_fs1));
+			    				
+					Bitmap bmp = UnscaledBitmapLoader.loadFromResource(xoid.getResources(), R.drawable.controller_fs1, null);
+					BitmapDrawable bmpDrw = new BitmapDrawable(bmp);									
+					inputView.setImageDrawable(bmpDrw);
+					
+				   	inputHandler.readControllerValues(R.raw.controller_fs1);
+						
+					lp.gravity = Gravity.CENTER | Gravity.RIGHT;
+					
+					//150 480x320 800x480
+                    //
+					
+					//lp.leftMargin = 220; //TODO calcular
+										
+					lp.leftMargin = (int)((xoid.getWindowManager().getDefaultDisplay().getWidth() / 480f) * 140);
+					
+				   	emuView.setLayoutParams(lp);				   	
+				   	emuView.bringToFront();
+				   	
+				}
+				else
+				{
+					
+			   	    //inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.controller_fs0));
+					
+					Bitmap bmp = UnscaledBitmapLoader.loadFromResource(xoid.getResources(), R.drawable.controller_fs0, null);
+					BitmapDrawable bmpDrw = new BitmapDrawable(bmp);									
+					inputView.setImageDrawable(bmpDrw);
 			    	
-			   	inputHandler.readControllerValues(R.raw.controller_fs0);
+			   	    inputHandler.readControllerValues(R.raw.controller_fs0);
+				}
 			}
 			else if(state == InputHandler.STATE_SHOWING_KEYBOARD)
 			{
-			    				    				    	
-			   	inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.keyboard_fs0));
+			    /*	
+				if(prefshelper.getLandscapeControllerType()==1 && prefshelper.isLandscapeTouchController())
+				{
+					lp.gravity = Gravity.CENTER | Gravity.RIGHT;
+					lp.leftMargin = 220; 
+				   	emuView.setLayoutParams(lp);	
+				}*/
+				
+			   	//inputView.setImageDrawable(xoid.getResources().getDrawable(R.drawable.keyboard_fs0));
+				
+				Bitmap bmp = UnscaledBitmapLoader.loadFromResource(xoid.getResources(), R.drawable.keyboard_fs0, null);
+				BitmapDrawable bmpDrw = new BitmapDrawable(bmp);									
+				inputView.setImageDrawable(bmpDrw);
 			    	
 			  	inputHandler.readKeyboardValues(R.raw.keyboard_fs0);
 			}
@@ -305,7 +374,9 @@ public class MainHelper {
 		emuView.requestLayout();
 		 
 		inputView.invalidate();
-		inputView.requestLayout();	  
+		inputView.requestLayout();	 
+		
+		
 
 	}
 	

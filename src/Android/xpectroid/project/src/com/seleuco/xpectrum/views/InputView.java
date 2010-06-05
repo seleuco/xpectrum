@@ -13,8 +13,8 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- 
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum.views;
@@ -34,6 +34,7 @@ import android.util.AttributeSet;
 import android.widget.ImageView;
 
 import com.seleuco.xpectrum.Xpectroid;
+import com.seleuco.xpectrum.input.InputHandler;
 import com.seleuco.xpectrum.input.InputValue;
 
 public class InputView extends ImageView {
@@ -69,6 +70,9 @@ public class InputView extends ImageView {
 		pnt.setARGB(255, 255, 255, 255);
 		//p.setTextSize(25);
 	    pnt.setStyle(Style.STROKE);		
+	    
+		pnt.setARGB(255,255,255,255);
+		pnt.setTextSize(16);
 	}
 
 	@Override
@@ -148,7 +152,7 @@ public class InputView extends ImageView {
 		super.onDraw(canvas);
 		
 		//debug
-  /*
+        /*
 		ArrayList<InputValue> ids = xoid.getInputHandler().getAllInputData();
 		Paint p2 = new Paint();
    	    p2.setARGB(255, 255, 255, 255);
@@ -159,11 +163,26 @@ public class InputView extends ImageView {
 		   if(r!=null)
 		      canvas.drawRect(r, p2);
 		}
-*/
+		*/
+
 		//		
 		if(xoid==null)return;
+		
+		InputHandler inputHandler = xoid.getInputHandler();
 
-		ArrayList<InputValue> keys = xoid.getInputHandler().getPressedKeys();
+		ArrayList<InputValue> keys = inputHandler.getPressedKeys();
+				
+		if(inputHandler.isShift() && inputHandler.getInputHandlerState() == InputHandler.STATE_SHOWING_KEYBOARD)
+		{
+			canvas.drawText("Caps ON", 10,  20, pnt);
+		}
+		
+		if(inputHandler.isSymbol() && inputHandler.getInputHandlerState() == InputHandler.STATE_SHOWING_KEYBOARD)
+		{
+			//canvas.drawText("Symbol ON", 10,  40, pnt);
+			
+			canvas.drawText("Symbol ON", getWidth() - 90,  20, pnt);
+		}
 		  
         if(keys.size()!=0)
         {	

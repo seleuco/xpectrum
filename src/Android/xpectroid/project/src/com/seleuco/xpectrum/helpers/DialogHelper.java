@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum.helpers;

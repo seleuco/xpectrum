@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum;
@@ -156,7 +156,7 @@ public class Emulator
 		
 		int channelConfig = stereo ? AudioFormat.CHANNEL_CONFIGURATION_STEREO : AudioFormat.CHANNEL_CONFIGURATION_MONO;
 		int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-		int bufferSize = AudioTrack.getMinBufferSize(sampleFreq, channelConfig, audioFormat) * 2;
+		int bufferSize = AudioTrack.getMinBufferSize(sampleFreq, channelConfig, audioFormat) * 2;// * 4;//*2?
 		
 		//System.out.println("Buffer Size "+bufferSize);
 		
@@ -203,6 +203,8 @@ public class Emulator
 	
 	//EMULATOR
 	public static void emulate(final String libPath,final String resPath){
+
+		//Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		
 		if (isEmulating)return;
 		
@@ -212,7 +214,12 @@ public class Emulator
 				init(libPath,resPath);
 			}			
 		},"emulator-Thread");
+		
+
+		//t.setPriority(Thread.MIN_PRIORITY);
+		//t.setPriority(Thread.MAX_PRIORITY);
 		t.start();
+		
 	}
 	
 	//native

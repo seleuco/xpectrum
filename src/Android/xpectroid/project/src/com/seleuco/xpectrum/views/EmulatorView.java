@@ -14,13 +14,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum.views;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.SurfaceHolder.Callback;
@@ -93,7 +94,7 @@ public class EmulatorView extends SurfaceView implements Callback{
 
 			widthSize = MeasureSpec.getSize(widthMeasureSpec);
 			heightSize = MeasureSpec.getSize(heightMeasureSpec);
-			
+						
 			if(heightSize==0)heightSize=1;
 			if(widthSize==0)widthSize=1;
 
@@ -153,11 +154,17 @@ public class EmulatorView extends SurfaceView implements Callback{
 
 	//@Override
 	public void surfaceCreated(SurfaceHolder holder) {
+		//Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		Emulator.setHolder(holder);		
 	}
 
 	//@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
 		Emulator.setHolder(null);		
+	}
+	
+	@Override
+	public boolean onTrackballEvent(MotionEvent event) {
+		return xoid.getInputHandler().onTrackballEvent(event);
 	}
 }

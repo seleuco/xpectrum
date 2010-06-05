@@ -151,6 +151,8 @@ void dump_video()
 		screenbuffer[i] = local_palette[(unsigned char)local_buffer[i]];
 	 }
 
+	 //sched_yield();
+
 	 dumpVideo_callback(emulating);
 }
 

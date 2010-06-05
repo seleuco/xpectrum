@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum.helpers;
@@ -23,8 +23,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
+import android.view.Display;
 
 import com.seleuco.xpectrum.Xpectroid;
+import com.seleuco.xpectrum.input.InputHandler;
 
 public class PrefsHelper implements OnSharedPreferenceChangeListener
 {
@@ -40,23 +42,25 @@ public class PrefsHelper implements OnSharedPreferenceChangeListener
 	final static public String PREF_LANDSCAPE_BITMAP_FILTERING = "PREF_LANDSCAPE_BITMAP_FILTERING";
 	final static public String PREF_LANDSCAPE_CONTROLLER_TYPE = "PREF_LANDSCAPE_CONTROLLER_TYPE";
 	
-	final static public String  PREF_PORTRAIT_CROP_X = "PREF_PORTRAIT_CROP_X";
+	final static public String  PREF_PORTRAIT_CROP_X = "PREF_PORTRAIT_CROP_X_v2";
 	final static public String  PREF_PORTRAIT_CROP_Y = "PREF_PORTRAIT_CROP_Y";
-	final static public String  PREF_LANDSCAPE_CROP_X = "PREF_LANDSCAPE_CROP_X";
-	final static public String  PREF_LANDSCAPE_CROP_Y = "PREF_LANDSCAPE_CROP_Y";
+	final static public String  PREF_LANDSCAPE_CROP_X = "PREF_LANDSCAPE_CROP_X_v2";
+	final static public String  PREF_LANDSCAPE_CROP_Y = "PREF_LANDSCAPE_CROP_Y_v2";
+	
+	final static public String  PREF_DEFINED_KEYS = "PREF_DEFINED_KEYS";
+	
+	final static public String  PREF_TRACKBALL_SENSITIVITY = "PREF_TRACKBALL_SENSITIVITY";
+	final static public String  PREF_TRACKBALL_NOMOVE = "PREF_TRACKBALL_NOMOVE";
 	
 	protected Xpectroid xoid = null;
 	
 	public PrefsHelper(Xpectroid value){
 		xoid = value;
-				
 	}
 
 
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
 			String key) {
-		
-		
 	}
 	
 	public void resume() {
@@ -116,7 +120,13 @@ public class PrefsHelper implements OnSharedPreferenceChangeListener
 	}
 
 	public boolean isPortraitCropX(){
-		return getSharedPreferences().getBoolean(PREF_PORTRAIT_CROP_X,true);
+		//HVGA 480x320 -> No crop
+		Display d = xoid.getWindowManager().getDefaultDisplay();
+		boolean def = true;
+		if((d.getHeight()==480 && d.getWidth()==320) || (d.getHeight()==320 && d.getWidth()==480))
+		    def = false;//Esta guarreria la hago por culpa de los tontos que no ven la opcion de crop
+		
+		return getSharedPreferences().getBoolean(PREF_PORTRAIT_CROP_X,def);
 	}
 	
 	public boolean isPortraitCropY(){
@@ -124,10 +134,34 @@ public class PrefsHelper implements OnSharedPreferenceChangeListener
 	}
 	
 	public boolean isLandscapeCropX(){
-		return getSharedPreferences().getBoolean(PREF_LANDSCAPE_CROP_X,false);
+		return getSharedPreferences().getBoolean(PREF_LANDSCAPE_CROP_X,true);
 	}
 	
 	public boolean isLandscapeCropY(){
-		return getSharedPreferences().getBoolean(PREF_LANDSCAPE_CROP_Y,false);
+		return getSharedPreferences().getBoolean(PREF_LANDSCAPE_CROP_Y,true);
 	}
+	
+	public String getDefinedKeys(){
+		
+		SharedPreferences p = getSharedPreferences();
+		
+		StringBuffer defaultKeys = new StringBuffer(); 
+		
+		for(int i=0; i< InputHandler.defaultKeyMapping.length;i++)
+			defaultKeys.append(InputHandler.defaultKeyMapping[i]+":");
+			
+		return p.getString(PREF_DEFINED_KEYS, defaultKeys.toString());
+		
+	}
+	
+	public int getTrackballSensitivity(){
+		//return Integer.valueOf(getSharedPreferences().getString(PREF_TRACKBALL_SENSITIVITY,"3")).intValue();	
+		return getSharedPreferences().getInt(PREF_TRACKBALL_SENSITIVITY,3);
+	}
+	
+	public boolean isTrackballNoMove(){
+		return getSharedPreferences().getBoolean(PREF_TRACKBALL_NOMOVE,false);
+	}
+
+	
 }

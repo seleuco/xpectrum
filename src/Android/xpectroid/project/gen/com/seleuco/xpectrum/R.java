@@ -60,55 +60,69 @@ containing a value of this type.
         public static final int secondaryTextColor=0x7f010002;
     }
     public static final class color {
+        public static final int black=0x7f070002;
         /**  
 <color name="emu_back_color">#303030</color>
  
          */
         public static final int emu_back_color=0x7f070000;
+        public static final int grey=0x7f070003;
+        public static final int red=0x7f070004;
+        public static final int white=0x7f070001;
     }
     public static final class drawable {
+        public static final int black=0x7f020006;
         public static final int controller_fs0=0x7f020000;
-        public static final int controller_hs0=0x7f020001;
-        public static final int icon=0x7f020002;
-        public static final int keyboard_fs0=0x7f020003;
-        public static final int keyboard_hs0=0x7f020004;
+        public static final int controller_fs1=0x7f020001;
+        public static final int controller_hs0=0x7f020002;
+        public static final int icon=0x7f020003;
+        public static final int keyboard_fs0=0x7f020004;
+        public static final int keyboard_hs0=0x7f020005;
+        public static final int translucent=0x7f020007;
+        public static final int transparent=0x7f020008;
     }
     public static final class id {
-        public static final int ButtonContinue=0x7f0a0004;
-        public static final int EmulatorFrame=0x7f0a0005;
-        public static final int EmulatorView=0x7f0a0006;
-        public static final int InputView=0x7f0a0007;
-        public static final int LinearLayout01=0x7f0a0000;
-        public static final int ScrollView01=0x7f0a0002;
-        public static final int TextView01=0x7f0a0003;
-        public static final int ad=0x7f0a0001;
-        public static final int menu_quit_option=0x7f0a0010;
-        public static final int menu_settings_option=0x7f0a000f;
-        public static final int vkey_A=0x7f0a000b;
-        public static final int vkey_B=0x7f0a000c;
-        public static final int vkey_MENU=0x7f0a000d;
-        public static final int vkey_SELECT=0x7f0a000e;
-        public static final int vkey_X=0x7f0a0009;
-        public static final int vkey_Y=0x7f0a000a;
-        public static final int vkeys=0x7f0a0008;
+        public static final int ButtonContinue=0x7f0b0006;
+        public static final int EmulatorFrame=0x7f0b0007;
+        public static final int EmulatorView=0x7f0b0008;
+        public static final int InputView=0x7f0b0009;
+        public static final int LinearLayout01=0x7f0b0002;
+        public static final int ScrollView01=0x7f0b0004;
+        public static final int TextView01=0x7f0b0005;
+        public static final int ad=0x7f0b0003;
+        public static final int menu_help_option=0x7f0b0012;
+        public static final int menu_quit_option=0x7f0b0013;
+        public static final int menu_settings_option=0x7f0b0011;
+        public static final int seekbar=0x7f0b0001;
+        public static final int value=0x7f0b0000;
+        public static final int vkey_A=0x7f0b000d;
+        public static final int vkey_B=0x7f0b000e;
+        public static final int vkey_MENU=0x7f0b000f;
+        public static final int vkey_SELECT=0x7f0b0010;
+        public static final int vkey_X=0x7f0b000b;
+        public static final int vkey_Y=0x7f0b000c;
+        public static final int vkeys=0x7f0b000a;
     }
     public static final class layout {
-        public static final int ad=0x7f030000;
-        public static final int main=0x7f030001;
+        public static final int bar=0x7f030000;
+        public static final int help=0x7f030001;
+        public static final int main=0x7f030002;
     }
     public static final class menu {
-        public static final int menu=0x7f090000;
+        public static final int menu=0x7f0a0000;
     }
     public static final class raw {
         public static final int controller_fs0=0x7f050000;
-        public static final int controller_hs0=0x7f050001;
-        public static final int games=0x7f050002;
-        public static final int keyboard_fs0=0x7f050003;
-        public static final int keyboard_hs0=0x7f050004;
-        public static final int readme=0x7f050005;
+        public static final int controller_fs1=0x7f050001;
+        public static final int controller_hs0=0x7f050002;
+        public static final int games=0x7f050003;
+        public static final int keyboard_fs0=0x7f050004;
+        public static final int keyboard_hs0=0x7f050005;
+        public static final int readme=0x7f050006;
     }
     public static final class string {
-        public static final int app_name=0x7f080009;
+        public static final int app_name=0x7f08000a;
+        public static final int menu_help=0x7f080009;
         public static final int menu_quit=0x7f080008;
         public static final int menu_settings=0x7f080007;
         public static final int menu_vkey_A=0x7f080002;
@@ -118,6 +132,10 @@ containing a value of this type.
         public static final int menu_vkey_X=0x7f080000;
         public static final int menu_vkey_Y=0x7f080001;
         public static final int menu_vkeys=0x7f080006;
+    }
+    public static final class style {
+        public static final int ListText=0x7f090000;
+        public static final int ListTextSmall=0x7f090001;
     }
     public static final class xml {
         public static final int userpreferences=0x7f040000;

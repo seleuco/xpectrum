@@ -1,24 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="com.seleuco.xpectrum"
-      android:versionCode="1"
-      android:versionName="1.0">
+      android:versionCode="2"
+      android:versionName="1.1">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="false">
         <activity android:name="com.seleuco.xpectrum.Xpectroid"
                   android:label="@string/app_name"
-                  android:launchMode="singleTask" android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+                  android:launchMode="singleTask" android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+                  android:windowSoftInputMode="stateAlwaysHidden"
+                  >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 		<activity android:name="com.seleuco.xpectrum.prefs.UserPreferences" android:label="Xpectroid Preferences"/>
-		<activity android:name="com.seleuco.xpectrum.AdActivity" android:label="Xpectroid Help"/>
+		<activity android:name="com.seleuco.xpectrum.HelpActivity" android:label="Xpectroid Help" android:launchMode="singleTop"/>		
+		<activity android:name="com.seleuco.xpectrum.prefs.DefineKeys" android:label="Define Keys"/>
+		<activity android:name="com.seleuco.xpectrum.prefs.KeySelect" android:label="Select Key" android:theme="@android:style/Theme.Dialog"/>
         <meta-data android:value="a14bc44c322cf54" android:name="ADMOB_PUBLISHER_ID"/>
     </application>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-sdk android:minSdkVersion="3" android:targetSdkVersion="7"/>
     <supports-screens
           android:largeScreens="true"

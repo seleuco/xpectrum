@@ -232,10 +232,12 @@ inline int min(int a, int b) {
   return a < b ? a : b;
 }
 
+int k =0;
 void SyncFreq()
 {
     unsigned time;
     static int oldtime = 0;
+
 /*
     time = getTicks();
     unsigned cur = time -oldtime;
@@ -270,7 +272,7 @@ void SyncFreq2()
     	timet = getTicks();
     	usleep(100);
     }
-    while ((timet - oldtimet) < 5); // asegura la temporizacion
+    while ((timet - oldtimet) < /*5*/10); // asegura la temporizacion
 
     oldtimet = timet;
 }
@@ -299,12 +301,12 @@ void load_mconfig()
         fclose(fp);
         read = 1;
     }
-    if (mconfig.id != 0xABCD0015 || !read)
+    if (mconfig.id != 0xABCD0017 || !read)
     {
-        mconfig.id = 0xABCD0015;
+        mconfig.id = 0xABCD0017;
 #if defined(IPHONE) || defined(ANDROID)
         mconfig.zx_screen_mode = 0;
-        mconfig.frameskip = 1;
+        mconfig.frameskip = 2;
 #else
         mconfig.zx_screen_mode = 0;
         mconfig.frameskip = 0;
@@ -316,7 +318,7 @@ void load_mconfig()
         mconfig.sound_freq = 44100;//44100
         mconfig.speed_mode = 100;//100% emulation
         mconfig.wait_vsync = 0;//no vsync
-        mconfig.show_fps = 1;
+        mconfig.show_fps = 0;
         mconfig.speed_loading = 1;
         mconfig.flash_loading = 1;
         mconfig.edge_loading = 1;
@@ -1347,8 +1349,11 @@ int get_rom(int tape)
 
         if ((new_key & JOY_BUTTON_L) ) { posfile = 0;}
         if ((new_key & JOY_BUTTON_R) ) { posfile = nfiles - 1; }
+#ifndef ANDROID
+
         if ((new_key & JOY_BUTTON_LEFT )) { posfile -= 24; if ( posfile < 0       ) posfile = 0;          }
         if ((new_key & JOY_BUTTON_RIGHT)) { posfile += 24; if ( posfile >= nfiles ) posfile = nfiles - 1; }
+#endif
 
         //if ((new_key & JOY_BUTTON_L) || (new_key & JOY_BUTTON_LEFT )) { posfile -= 24; if ( posfile < 0       ) posfile = 0;          }
         //if ((new_key & JOY_BUTTON_R) || (new_key & JOY_BUTTON_RIGHT)) { posfile += 24; if ( posfile >= nfiles ) posfile = nfiles - 1; }
@@ -1401,7 +1406,7 @@ void credits()
     v_putcad((40-27)/2,y,132,"and others (thanks for all)");//y += 2;
 #elif defined (ANDROID)
     y = 4;
-    v_putcad((40-40)/2,y,130," Xpectroid v1.0 by D.Valdeita(Seleuco)");y += 2;
+    v_putcad((40-40)/2,y,130," Xpectroid v1.1 by D.Valdeita(Seleuco)");y += 2;
     v_putcad((40-40)/2,y,130,".....................................");y += 3;
 
     v_putcad((40-32)/2,y,132,"Based on GP2XPectrum 1.9 work of");y += 2;
@@ -2299,7 +2304,7 @@ int Config_SCR()
         //sprintf(menustring,"CPU Speed %i MHz",mconfig.cpu_freq);
         //v_putcad(10,y,130,menustring);
         if (mconfig.frameskip==2)
-        	 v_putcad(10,y,130,"Draw 1/3 Frames");
+        	 v_putcad(10,y,130,"Auto Skip Frames");
         else if (mconfig.frameskip == 1)
         	 v_putcad(10,y,130,"Draw 1/2 Frames");
         else v_putcad(10,y,130,"Draw All Frames");
@@ -3578,6 +3583,137 @@ tape_browser()
 
 unsigned oldtime = 0;
 unsigned fpstime = 0;
+unsigned autoskiptime = 0;
+
+unsigned prev_measure=0,this_frame_base,prev;
+static int speed = 100;
+unsigned curr,last=0;
+int frameskipadjust = 0;
+
+////////////////////////////
+//NEW AUTO SYNC STUFF
+
+#define FRAMESKIP_LEVELS 12
+#define FRAMESKIP_FACTOR 1
+
+int frameskip = 0;//Nos indica el nivel de frameskip
+static int frameskip_counter = 0;//nos indica el skip actual
+
+int skip_this_frame(void)
+{
+	static const int skiptable[FRAMESKIP_LEVELS][FRAMESKIP_LEVELS] =
+	{
+		{ 0,0,0,0,0,0,0,0,0,0,0,0 },
+		{ 0,0,0,0,0,0,0,0,0,0,0,1 },
+		{ 0,0,0,0,0,1,0,0,0,0,0,1 },
+		{ 0,0,0,1,0,0,0,1,0,0,0,1 },
+		{ 0,0,1,0,0,1,0,0,1,0,0,1 },
+		{ 0,1,0,0,1,0,1,0,0,1,0,1 },
+		{ 0,1,0,1,0,1,0,1,0,1,0,1 },
+		{ 0,1,0,1,1,0,1,0,1,1,0,1 },
+		{ 0,1,1,0,1,1,0,1,1,0,1,1 },
+		{ 0,1,1,1,0,1,1,1,0,1,1,1 },
+		{ 0,1,1,1,1,1,0,1,1,1,1,1 },
+		{ 0,1,1,1,1,1,1,1,1,1,1,1 }
+	};
+	return skiptable[frameskip][frameskip_counter /* % 12*/];
+}
+
+void presync()
+{
+
+	float t_frame = (1000.0/50.0) * (100.0/(float)mconfig.speed_mode);
+
+	if (prev_measure==0)
+	{
+		prev_measure = getTicks() - (FRAMESKIP_LEVELS * FRAMESKIP_FACTOR) * (int)t_frame;
+		last = getTicks();
+	}
+
+	if (frameskip_counter == 0)
+		this_frame_base = prev_measure + (FRAMESKIP_LEVELS * FRAMESKIP_FACTOR)* (int)t_frame;
+
+	curr = getTicks();
+	if ((curr - last) > 300)
+	{
+		frameskip_counter = 0;
+		frameskip = 0;
+		prev_measure = 0;
+		return;
+	}
+	last = curr;
+
+	if (skip_this_frame() == 0)
+	{
+		unsigned target;
+
+		if ( mconfig.sound_mode == 0 && !(mconfig.speed_loading && tape_playing))
+		{
+			target = this_frame_base + frameskip_counter * (int)t_frame;
+			if ((curr < target) && (target-curr<1000))
+			{
+				do
+				{
+					curr = getTicks();
+				} while ((curr < target) && (target-curr<1000));
+			}
+		}
+		if (frameskip_counter == 0)
+		{
+			float divdr;
+			//divdr = (float)((float)((float)(1000) / 50) * (float)(FRAMESKIP_LEVELS * FRAMESKIP_FACTOR)) / (float)(curr - prev_measure);
+			divdr = (float)((float) t_frame * (float)(FRAMESKIP_LEVELS * FRAMESKIP_FACTOR)) / (float)(curr - prev_measure);
+			speed = (int)(divdr * 100.0);
+
+			//int divdr;
+			//divdr = 50 * (curr - prev_measure) / (100 * FRAMESKIP_LEVELS * FRAMESKIP_FACTOR);
+			//speed = (1000 + divdr/2) / divdr;
+
+			prev_measure = curr;
+		}
+
+		prev = curr;
+
+		if(frameskip_counter == 0)
+		{
+			if (speed >= 98)
+			{
+				frameskipadjust++;
+				if (frameskipadjust >= 3)
+				{
+					frameskipadjust = 0;
+
+					if (frameskip > 0) frameskip--;
+				}
+			}
+			else
+			{
+				if (speed < 87)
+				{
+					frameskipadjust -= (90 - speed) / 5;
+				}
+				else
+				{
+
+					if (frameskip < 8)
+						frameskipadjust--;
+				}
+
+				while (frameskipadjust <= -2)
+				{
+					frameskipadjust += 2;
+					if (frameskip < FRAMESKIP_LEVELS-1) frameskip++;
+				}
+			}
+		}
+	}
+
+
+	frameskip_counter = (frameskip_counter + 1) % (FRAMESKIP_LEVELS * FRAMESKIP_FACTOR);
+}
+
+////////////////////////////
+
 
 #if defined(IPHONE)
 int iphone_main(int argc, char *argv[])
@@ -3601,6 +3737,9 @@ int main(int argc, char *argv[])
     int count_fps = 0;
     int fpsseg = 0;
     long tape_stop_delay = 0;
+
+    int count_fps_draw = 0;
+    int fpsseg_draw = 0;
 
 #ifdef DEBUG_MSG
     printf("Iniciando xpectrum\n");
@@ -3724,6 +3863,7 @@ int main(int argc, char *argv[])
 
         skip = 0;
         count_fps = 0;
+        count_fps_draw = 0;
         emulating = 1;
         while(1)
         {
@@ -3751,6 +3891,9 @@ int main(int argc, char *argv[])
             	//printf("Salida llamada a ConfigSCR\n");
             	emulating = 1;
                 skip = 0;
+                prev_measure = 0;
+                frameskip = 0;
+                frameskip_counter=0;
             }
 
             nKeys = joystick_read();
@@ -3801,12 +3944,30 @@ int main(int argc, char *argv[])
                 {
                     fpsseg = count_fps;
                     count_fps = 0;
+                    fpsseg_draw = count_fps_draw;
+                    count_fps_draw = 0;
                     fpstime = getTicks();
                 }
                 count_fps++;
 
-                char result[10];
-                sprintf( result, "FPS: %d", fpsseg );
+                char result[30];
+                if (mconfig.frameskip==2)
+                {
+                	//sprintf( result, "FPS2: %d/%d", fpsseg, fpsseg_draw);
+        			int fps;
+        			char buf[30];
+        			int divdr;
+        			divdr = 100 * FRAMESKIP_LEVELS;
+        			fps = (50 * (FRAMESKIP_LEVELS - frameskip) * speed + (divdr / 2)) / divdr;
+        			sprintf(result,"%s%2d%4d%%%4d/%d fps",1?"auto":"fskp",frameskip,speed,fps,(int)(50+0.5));
+                }
+                else  if (mconfig.frameskip==1)
+                {
+                	sprintf( result, "FPS: %d/%d", fpsseg/2,fpsseg );
+                }
+                else
+                    sprintf( result, "FPS: %d", fpsseg );
+
                 int tmp = COLORFONDO; /* if (!full_screen) COLORFONDO = 134; */
                 COLORFONDO = 134;
 #ifdef ANDROID
@@ -3840,7 +4001,10 @@ int main(int argc, char *argv[])
 
                 if(mconfig.frameskip == 2)
                 {
-                	skip = !(cur_frame % 3 ==  0);
+                	//skip = !(cur_frame % 3 ==  0);
+                	presync();
+                	skip = skip_this_frame();
+                    //if(!skip)count_fps_draw++;
                 }
                 else if (mconfig.frameskip == 1)
                 {
@@ -4035,11 +4199,12 @@ int main(int argc, char *argv[])
                 unprogram--;
             }
 */
+
             if (skip == 0)
             {
             	  dump_video();
                 //Seleuco: Esta temporizacion solamente se tiene que hacer si no se reproduce Audio. Para evitar underuns dejar que temporice el audio si existe sonido.
-                if (mconfig.sound_mode == 0 && !(mconfig.speed_loading && tape_playing))
+                if (mconfig.sound_mode == 0 && !(mconfig.speed_loading && tape_playing) && !(mconfig.frameskip == 2))
                 {
                     SyncFreq();
                 }

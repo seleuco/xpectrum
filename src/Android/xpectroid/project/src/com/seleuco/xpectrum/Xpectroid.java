@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum;
@@ -126,11 +126,14 @@ public class Xpectroid extends Activity {
                 
         Emulator.emulate(mainHelper.getLibDir(),mainHelper.getResDir());     
         
+        /* 
         if(!mainHelper.isLite())
         {
-			Intent i = new Intent(this, AdActivity.class);
-			startActivityForResult(i, MainHelper.SUBACTIVITY_AD);
+			Intent i = new Intent(this, HelpActivity.class);
+			startActivityForResult(i, MainHelper.SUBACTIVITY_HELP);
         }
+        */
+        
     }
     
 	//MENU STUFF

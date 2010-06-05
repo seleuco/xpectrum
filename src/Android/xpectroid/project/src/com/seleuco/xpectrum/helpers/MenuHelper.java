@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum.helpers;
@@ -24,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import com.seleuco.xpectrum.HelpActivity;
 import com.seleuco.xpectrum.R;
 import com.seleuco.xpectrum.Xpectroid;
 import com.seleuco.xpectrum.input.InputHandler;
@@ -62,6 +63,10 @@ public class MenuHelper {
 			Intent i = new Intent(xoid, UserPreferences.class);
 			xoid.startActivityForResult(i, MainHelper.SUBACTIVITY_USER_PREFS);
 			return true;
+		case R.id.menu_help_option:
+			Intent i2 = new Intent(xoid, HelpActivity.class);
+			xoid.startActivityForResult(i2, MainHelper.SUBACTIVITY_HELP);
+			return true;			
 		case R.id.vkey_A:
 			xoid.getInputHandler().handleVirtualKey(InputHandler.A);
 			return true;

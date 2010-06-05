@@ -14,7 +14,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-   Created by Sean Christmann on 12/22/08. Adapted by Seleuco.
+   Copyright (c) 2010 Seleuco.
 */
 
 package com.seleuco.xpectrum.input;
@@ -32,12 +32,13 @@ public class InputHandlerExt extends InputHandler {
 	
 	protected static int [] newtouches = new int[10];
 	protected static int [] oldtouches = new int[10];
-	protected static boolean [] touchstate = new boolean[10];
+	protected static boolean [] touchstates = new boolean[10];
 	
 	public InputHandlerExt(Xpectroid value) {
 		super(value);
 	}
 	
+	/*
 	@Override
 	protected boolean handleTouchKeyboard(MotionEvent event) {
 		for (int i = 0; i < event.getPointerCount(); i++) {
@@ -114,7 +115,7 @@ public class InputHandlerExt extends InputHandler {
 
 		return true;
 	}
-	
+	*/
 	/*
 	@Override
 	protected boolean handleTouchController(MotionEvent event) {
@@ -264,7 +265,7 @@ public class InputHandlerExt extends InputHandler {
 				
 		for (int i = 0; i < 10; i++) 
 		{
-		    touchstate[i] = false;
+		    touchstates[i] = false;
 		    oldtouches[i] = newtouches[i];
 		}
 		
@@ -285,7 +286,7 @@ public class InputHandlerExt extends InputHandler {
 			{		
 				//int id = i;
 				int id = actionPointerId;
-				touchstate[id] = true;
+				touchstates[id] = true;
 				
 				for (int j = 0; j < buttons.size(); j++) {
 					InputValue iv = buttons.get(j);
@@ -299,16 +300,20 @@ public class InputHandlerExt extends InputHandler {
 							case MotionEvent.ACTION_DOWN:
 							case MotionEvent.ACTION_POINTER_DOWN:
 							case MotionEvent.ACTION_MOVE:
-							
-								pad_data |= getButtonValue(iv.getValue());
+															
 								newtouches[id] = getButtonValue(iv.getValue());
+					            
+								if(oldtouches[id] != newtouches[id])	            
+					            	pad_data &= ~(oldtouches[id]);
+					            
+								pad_data |= newtouches[id];
 								break;
 							}
 						} else if (iv.getType() == TYPE_SWITCH) {
 							if (event.getAction() == MotionEvent.ACTION_DOWN) {
 								for (int ii = 0; ii < 10; ii++) 
 								{
-								    touchstate[ii] = false;
+								    touchstates[ii] = false;
 								    oldtouches[ii] = 0;
 								}
 								changeState();
@@ -317,16 +322,12 @@ public class InputHandlerExt extends InputHandler {
 							}
 						}
 					}
-				}
-	            if(oldtouches[id] != newtouches[id])
-	            {
-	            	pad_data &= ~(oldtouches[id]);	                
-	            }
+				}	                	            
 			} 
 		}
 
 		for (int i = 0; i < 10; i++) {
-			if (!touchstate[i]) {
+			if (!touchstates[i]) {
 				boolean really = true;
 
 				for (int j = 0; j < 10 && really; j++) {
