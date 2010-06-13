@@ -23,7 +23,7 @@
 
  Copyright (c) 2000-2002 Santiago Romero Iglesias  (for ASpectrum)
  Copyright (c) 2004 rlyeh  (adapted for fzx32, also used by GP2Xpectrum)
- Copyright (c) 2006-2007 Metalbrain  (modifications for GP2Xpectrum)
+ Copyright (c) 2006-2009 Metalbrain  (modifications for GP2Xpectrum)
  some small parts may be taken from or inspired by FUSE's equivalent file, which is
  Copyright (c) 1999-2006 Philip Kendall
  =====================================================================*/
@@ -191,13 +191,13 @@ switch (opcode)
 
   case LD_A_R:
     contend_read_byte();
-    r_A = (regs->R.W & 0x7f) | (regs->R.W & 0x80);
+    r_A = (r_R & 0x7f) | (r_R7 & 0x80);
     r_F = (r_F & FLAG_C) | sz53_table[r_A] | (regs->IFF2 ? FLAG_V : 0);
     break;
 
   case LD_R_A:
     contend_read_byte();
-    regs->R.W = r_A;
+    r_R7 = r_R = r_A;
     break;
 
 
@@ -387,22 +387,21 @@ switch (opcode)
 
   case IND:
     contend_read_byte();
-    ula_contend_port_early((r_BC));
-    ula_contend_port_late((r_BC));
-    r_meml = Z80InPort (regs, (r_BC));
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    ula_contend_port_early(r_BC);
+    ula_contend_port_late(r_BC);
+    r_meml = Z80InPort (regs, r_BC);
+    if( ( r_BC & 0x8002 ) == 0 && ( model == ZX_128 || model == ZX_128_USR0 || model == ZX_PLUS2 ) )
+      {
+      Z80OutPort(regs,0x7ffd,r_meml);
+      }
+    r_B--;
     Z80WriteMem (r_HL, r_meml, regs);
-    r_F |= ((r_meml & 0x80) >> 6);
-
-    r_op = r_meml+((r_C-1)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
-   
+    r_oph = r_meml+r_C-1;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ) |
+    	  sz53_table[(r_B)];
     r_HL--;
     break;
 
@@ -411,19 +410,19 @@ switch (opcode)
     ula_contend_port_early((r_BC));
     ula_contend_port_late((r_BC));
     r_meml = Z80InPort (regs, (r_BC));
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    if( ( r_BC & 0x8002 ) == 0 && ( model == ZX_128 || model == ZX_128_USR0 || model == ZX_PLUS2 ) )
+      {
+      Z80OutPort(regs,0x7ffd,r_meml);
+      }
+    r_B--;
     Z80WriteMem (r_HL, r_meml, regs);
-    r_F |= ((r_meml & 0x80) >> 6);
-    
-    r_op = r_meml+((r_C-1)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
-
+  
+    r_oph = r_meml+r_C-1;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ) |
+    	  sz53_table[(r_B)];   
     if (r_B)
       {
       contend_read_x5(r_HL);
@@ -433,23 +432,23 @@ switch (opcode)
     break;
 
   case INI:
-    contend_read_byte_x2();
+    contend_read_byte();
     ula_contend_port_early((r_BC));
     ula_contend_port_late((r_BC));
-    r_meml = Z80InPort (regs, (r_BC));
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    r_meml = Z80InPort (regs, r_BC);
+    if( ( r_BC & 0x8002 ) == 0 && ( model == ZX_128 || model == ZX_128_USR0 || model == ZX_PLUS2 ) )
+      {
+      Z80OutPort(regs,0x7ffd,r_meml);
+      }
+    r_B--;
     Z80WriteMem (r_HL, r_meml, regs);
-    r_F |= ((r_meml & 0x80) >> 6);
-
-    r_op = r_meml+((r_C+1)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
     r_HL++;
+    r_oph = r_meml+r_C+1;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ) |
+    	  sz53_table[(r_B)];
     break;
 
 
@@ -458,19 +457,19 @@ switch (opcode)
     ula_contend_port_early((r_BC));
     ula_contend_port_late((r_BC));
     r_meml = Z80InPort (regs, (r_BC));
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    if( ( r_BC & 0x8002 ) == 0 && ( model == ZX_128 || model == ZX_128_USR0 || model == ZX_PLUS2 ) )
+      {
+      Z80OutPort(regs,0x7ffd,r_meml);
+      }
+    r_B--;
     Z80WriteMem (r_HL, r_meml, regs);
-    r_F |= ((r_meml & 0x80) >> 6);
 
-    r_op = r_meml+((r_C+1)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
-
+    r_oph = r_meml+r_C+1;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ? FLAG_P : 0 ) |
+    	  sz53_table[(r_B)];
     if (r_B)
       {
       contend_read_x5(r_HL);
@@ -482,44 +481,37 @@ switch (opcode)
   case OUTI:
     contend_read_byte();
     r_meml = Z80ReadMem (r_HL);
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    r_B--;
     ula_contend_port_early(r_BC);
     Z80OutPort (regs, r_BC, r_meml);
     ula_contend_port_late(r_BC);
-    r_F |= ((r_meml & 0x80) >> 6);
-
-
-    r_op = r_meml+((r_L)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
 
     r_HL++;
+    r_oph = r_meml+r_L;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ? FLAG_P : 0 ) |
+    	  sz53_table[(r_B)];
+
     break;
 
   case OTIR:
     contend_read_byte();
     r_meml = Z80ReadMem (r_HL);
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    r_B--;
     ula_contend_port_early(r_BC);
     Z80OutPort (regs, r_BC, r_meml);
     ula_contend_port_late(r_BC);
-    r_F |= ((r_meml & 0x80) >> 6);
-
-    r_op = r_meml+((r_L)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
 
     r_HL++;
+    r_oph = r_meml+r_L;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ? FLAG_P : 0 ) |
+    	  sz53_table[(r_B)];
+
     if (r_B)
       {
       contend_read_x5(r_BC);
@@ -531,43 +523,37 @@ switch (opcode)
   case OUTD:
     contend_read_byte();
     r_meml = Z80ReadMem (r_HL);
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    r_B--;
     ula_contend_port_early(r_BC);
     Z80OutPort (regs, r_BC, r_meml);
     ula_contend_port_late(r_BC);
-    r_F |= ((r_meml & 0x80) >> 6);
-
-    r_op = r_meml+((r_L)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
 
     r_HL--;
+    r_oph = r_meml+r_L;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ? FLAG_P : 0 ) |
+    	  sz53_table[(r_B)];
+
     break;
 
   case OTDR:
     contend_read_byte();
     r_meml = Z80ReadMem (r_HL);
-    r_memh = 0;
-    r_F = (r_F & FLAG_C) | ((r_B) & 0x0f ? 0 : FLAG_H) | FLAG_N;
-    (r_B)--;
-    r_F |= ((r_B) == 0x7f ? FLAG_V : 0) | sz53_table[(r_B)];
-    r_F &= 0xE8;
+    r_B--;
     ula_contend_port_early(r_BC);
     Z80OutPort (regs, r_BC, r_meml);
     ula_contend_port_late(r_BC);
-    r_F |= ((r_meml & 0x80) >> 6);
-
-    r_op = r_meml+((r_L)&0xff);
-    if (r_op>0xff) r_F |= 0x11;
-    r_opl = (r_op & 7) ^ r_B;
-    r_F |= parity_table[r_opl]<<2;
 
     r_HL--;
+    r_oph = r_meml+r_L;
+    r_opl = (r_oph & 7) ^ r_B;
+    r_F = ( r_meml & 0x80 ? FLAG_N : 0 ) |
+    	  ( (r_oph < r_meml ) ? FLAG_H | FLAG_C : 0 ) |
+    	  ( parity_table[r_opl] ? FLAG_P : 0 ) |
+    	  sz53_table[(r_B)];
+
     if (r_B)
       {
       contend_read_x5(r_BC);

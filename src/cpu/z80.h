@@ -151,7 +151,7 @@ word TrapAddress;
 word IRequest;
 
  /* general and shadow z80 registers */ 
-    eword AF, BC, DE, HL, IX, IY, PC, SP, R, 
+    eword AF, BC, DE, HL, IX, IY, PC, SP, 
 AFs, BCs, DEs, HLs;
 
 char machine_type;
@@ -160,7 +160,7 @@ char machine_type;
    
 
     /* IFF and I registers, used on interrupts. */ 
-    byte IFF1, IFF2, I, halted;
+    byte IFF1, IFF2, I, halted, R, R7;
    
 char IM;
    

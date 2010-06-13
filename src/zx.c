@@ -437,7 +437,7 @@ if(model==ZX_PLUS3) fdc_write_data(value);
 
 byte port_0x3ffd_in (void)
 {
-return (model==ZX_PLUS3 ? fdc_read_data() : 0xFF);
+return (model==ZX_PLUS3 ? fdc_read_data() : floating_bus[spectrumZ80->ICount] ? Z80ReadMem_notiming(floating_bus[spectrumZ80->ICount]) : 0xFF );
 }
 
 
@@ -623,13 +623,16 @@ byte Z80InPort (register word port)
      if (!(port & (0xFFFF^0xff3b))) return port_0xff3b_in();
   }
 
-  //if(contended_mask & 4) //if +2a or +3 then apply (fixes fairlight games)
-  {
+
    if (!(port & (0xFFFF^0x2FFD))) return port_0x2ffd_in();
    if (!(port & (0xFFFF^0x3FFD))) return port_0x3ffd_in();
-  }
 
-  if (!(port & (0xFFFF^0xFFFD))) return port_0xfffd_in();
+  if(contended_mask & 4) //if +2a or +3, read AY registers from 0xbffd
+  {
+   if (!(port & (0xFFFF^0xBFFD))) return port_0xfffd_in();
+  }
+			// read AY registers from 0xfffd, but not from 0xbffd
+  if ((!(port & (0xFFFF^0xFFFD)))&&(port & (0xFFFF^0xBFFD))) return port_0xfffd_in();
 
   //falta fffd_in para fuller
 
@@ -1063,7 +1066,7 @@ else    {
 
 void inline ula_contend_port_early(word port)
 {
-if((port & 0xc000)==0x4000)
+if(MEMc[port>>14])
         spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]);
 spectrumZ80->ICount-=1;
 }
@@ -1075,7 +1078,7 @@ if((contended_mask!=4)&&((port & 0x0001) == 0))
         spectrumZ80->ICount-=(cycles_delay[spectrumZ80->ICount]); spectrumZ80->ICount-=3;
         }
 else    {
-        if( ( port & 0xc000 ) == 0x4000 )
+	if(MEMc[port>>14])
                 {
                 spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;
                 spectrumZ80->ICount-=(cycles_delay2[spectrumZ80->ICount]); spectrumZ80->ICount-=1;

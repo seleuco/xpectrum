@@ -1188,6 +1188,10 @@ r_memh=r_A;
 ula_contend_port_early(r_mem);
 ula_contend_port_late(r_mem);
 r_A = Z80InPort (regs, r_mem);
+if( ( r_mem & 0x8002 ) == 0 && ( model == ZX_128 || model == ZX_128_USR0 || model == ZX_PLUS2 ) )
+  {
+  Z80OutPort(regs,0x7ffd,r_A);
+  }
 r_PC++;
 break;
 

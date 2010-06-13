@@ -53,225 +53,182 @@ r_PC++;
 r_meml = Z80ReadMem_notiming (tmpreg.W);
 r_memh = tmpreg.W>>8;
 
-switch (opcode)
+switch (opcode & 0xf8)
   {
-  case RLC_xIXY:
+  case RLC_xIXY & 0xf8:
     RLC (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case RRC_xIXY:
+  case RRC_xIXY & 0xf8:
     RRC (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case RL_xIXY:
+  case RL_xIXY & 0xf8:
     RL (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case RR_xIXY:
+  case RR_xIXY & 0xf8:
     RR (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case SLA_xIXY:
+  case SLA_xIXY & 0xf8:
     SLA (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case SRA_xIXY:
+  case SRA_xIXY & 0xf8:
     SRA (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case SLL_xIXY:
+  case SLL_xIXY & 0xf8:
     SLL (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case SRL_xIXY:
+  case SRL_xIXY & 0xf8:
     SRL (r_meml);
     Z80WriteMem_notiming (tmpreg.W, r_meml, regs);
     AddCycles(23);
     break;
-  case 0x40:
-  case 0x41:
-  case 0x42:
-  case 0x43:
-  case 0x44:
-  case 0x45:
-  case 0x47:
-  case BIT_0_xIXY:
+
+  case BIT_0_xIXY & 0xf8:
     BIT_BIT_XY (0, r_meml, r_memh);
     AddCycles(20);
     break;
 
-  case 0x48:
-  case 0x49:
-  case 0x4a:
-  case 0x4b:
-  case 0x4c:
-  case 0x4d:
-  case 0x4f:
-  case BIT_1_xIXY:
+  case BIT_1_xIXY & 0xf8:
     BIT_BIT_XY (1, r_meml, r_memh);
     AddCycles(20);
     break;
 
-  case 0x50:
-  case 0x51:
-  case 0x52:
-  case 0x53:
-  case 0x54:
-  case 0x55:
-  case 0x57:
-  case BIT_2_xIXY:
+  case BIT_2_xIXY & 0xf8:
     BIT_BIT_XY (2, r_meml, r_memh);
     AddCycles(20);
     break;
 
-  case 0x58:
-  case 0x59:
-  case 0x5a:
-  case 0x5b:
-  case 0x5c:
-  case 0x5d:
-  case 0x5f:
-  case BIT_3_xIXY:
+  case BIT_3_xIXY & 0xf8:
     BIT_BIT_XY (3, r_meml, r_memh);
     AddCycles(20);
     break;
 
-  case 0x60:
-  case 0x61:
-  case 0x62:
-  case 0x63:
-  case 0x64:
-  case 0x65:
-  case 0x67:
-  case BIT_4_xIXY:
+  case BIT_4_xIXY & 0xf8:
     BIT_BIT_XY (4, r_meml,r_memh);
     AddCycles(20);
     break;
 
-  case 0x68:
-  case 0x69:
-  case 0x6a:
-  case 0x6b:
-  case 0x6c:
-  case 0x6d:
-  case 0x6f:
-  case BIT_5_xIXY:
+  case BIT_5_xIXY & 0xf8:
     BIT_BIT_XY (5, r_meml, r_memh);
     AddCycles(20);
     break;
 
-  case 0x70:
-  case 0x71:
-  case 0x72:
-  case 0x73:
-  case 0x74:
-  case 0x75:
-  case 0x77:
-  case BIT_6_xIXY:
+  case BIT_6_xIXY & 0xf8:
     BIT_BIT_XY (6, r_meml, r_memh);
     AddCycles(20);
     break;
-  case 0x78:
-  case 0x79:
-  case 0x7a:
-  case 0x7b:
-  case 0x7c:
-  case 0x7d:
-  case 0x7f:
-  case BIT_7_xIXY:
+  case BIT_7_xIXY & 0xf8:
     BIT_BIT7_XY (r_meml, r_memh);
     AddCycles(20);
     break;
 
-  case RES_0_xIXY:
+  case RES_0_xIXY & 0xf8:
     BIT_RES_mem_NC (0, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case RES_1_xIXY:
+  case RES_1_xIXY & 0xf8:
     BIT_RES_mem_NC (1, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case RES_2_xIXY:
+  case RES_2_xIXY & 0xf8:
     BIT_RES_mem_NC (2, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case RES_3_xIXY:
+  case RES_3_xIXY & 0xf8:
     BIT_RES_mem_NC (3, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case RES_4_xIXY:
+  case RES_4_xIXY & 0xf8:
     BIT_RES_mem_NC (4, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case RES_5_xIXY:
+  case RES_5_xIXY & 0xf8:
     BIT_RES_mem_NC (5, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case RES_6_xIXY:
+  case RES_6_xIXY & 0xf8:
     BIT_RES_mem_NC (6, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case RES_7_xIXY:
+  case RES_7_xIXY & 0xf8:
     BIT_RES_mem_NC (7, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_0_xIXY:
+  case SET_0_xIXY & 0xf8:
     BIT_SET_mem_NC (0, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_1_xIXY:
+  case SET_1_xIXY & 0xf8:
     BIT_SET_mem_NC (1, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_2_xIXY:
+  case SET_2_xIXY & 0xf8:
     BIT_SET_mem_NC (2, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_3_xIXY:
+  case SET_3_xIXY & 0xf8:
     BIT_SET_mem_NC (3, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_4_xIXY:
+  case SET_4_xIXY & 0xf8:
     BIT_SET_mem_NC (4, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_5_xIXY:
+  case SET_5_xIXY & 0xf8:
     BIT_SET_mem_NC (5, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_6_xIXY:
+  case SET_6_xIXY & 0xf8:
     BIT_SET_mem_NC (6, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-  case SET_7_xIXY:
+  case SET_7_xIXY & 0xf8:
     BIT_SET_mem_NC (7, tmpreg.W, r_meml);
     AddCycles(23);
     break;
-
-
-/*
- I must still include the undocumented opcodes such as:
- LD B, RLC(REGISTER+dd)       and so on ...
-
-*/
   default:
-//    exit(1);
-    if (regs->DecodingErrors)
-      {
-	printf ("z80 core: Unknown instruction: ");
-	if (regs->we_are_on_ddfd == WE_ARE_ON_DD)
-	  printf ("DD");
-	else
-	  printf ("FD");
-	printf ("CB %02Xh %02Xh at PC=%04Xh.\n",
-		Z80ReadMem_notiming (r_PC - 2), Z80ReadMem_notiming (r_PC - 1), r_PC - 4);
-      }
     break;
+  }
+
+if((opcode & 0xC0)!=0x40)
+  {
+  switch (opcode & 0x7)
+    {
+    case 0:	// LD B,
+    	r_B = r_meml;
+    	break;
+    case 1:	// LD C,
+    	r_C = r_meml;
+    	break;
+    case 2:	// LD D,
+    	r_D = r_meml;
+    	break;
+    case 3:	// LD E,
+    	r_E = r_meml;
+    	break;
+    case 4:	// LD H,
+    	r_H = r_meml;
+    	break;
+    case 5:	// LD L,
+    	r_L = r_meml;
+    	break;
+    case 6:
+    	break;
+    case 7:	// LD A,
+    	r_A = r_meml;
+    	break;
+    }
   }
