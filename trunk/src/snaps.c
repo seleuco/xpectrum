@@ -79,8 +79,7 @@ LoadSP (Z80Regs * regs, void *fp)
   regs->HLs.B.h = buffer[23];
   regs->AFs.B.l = buffer[24];
   regs->AFs.B.h = buffer[25];
-  regs->R.W = 0;
-  regs->R.B.l = buffer[26];
+  regs->R = buffer[26];
   regs->I = buffer[27];
   regs->SP.B.l = buffer[28];
   regs->SP.B.h = buffer[29];
@@ -170,7 +169,7 @@ LoadSNA (Z80Regs * regs, void * fp, int cmodel)
 //regs->IFF1    = regs->IFF2 = (buffer[19] & 0x04) >> 2;
   regs->IFF1    = (buffer[19] & 0x03) > 0 ? 1 : 0;
   regs->IFF2    = (buffer[19] & 0x04) > 0 ? 1 : 0;
-  regs->R.W     = buffer[20];
+  regs->R       = buffer[20];
   regs->AF.B.l  = buffer[21];
   regs->AF.B.h  = buffer[22];
   regs->SP.B.l  = buffer[23];
@@ -802,9 +801,8 @@ LoadZ80 (Z80Regs * regs, byte * fp, byte * fp_end)
         regs->SP.B.h    = buffer[9];
         regs->I         = buffer[10];
 
-        regs->R.B.l     = buffer[11] & 0x7F;
-        regs->R.B.l     |= (buffer[12] & 1 ) << 7;
-        regs->R.B.h     = 0;
+        regs->R   	= buffer[11] & 0x7F;
+        regs->R   	|= (buffer[12] & 1 ) << 7;
 
         /*regs->*/BorderColor = (buffer[12] >> 1) & 7;
         regs->DE.B.l    = buffer[13];
@@ -841,7 +839,7 @@ LoadZ80 (Z80Regs * regs, byte * fp, byte * fp_end)
         debugmsg("BCs",regs->BCs.W);
         debugmsg("AFs",regs->AFs.W);
         debugmsg("I",regs->I);
-        debugmsg("R",regs->R.W);
+        debugmsg("R",regs->R);
         debugmsg("IFF1",regs->IFF1);
         debugmsg("IFF2",regs->IFF2);
         debugmsg("IM",regs->IM);

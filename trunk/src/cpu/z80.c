@@ -94,7 +94,7 @@ void
 Z80Reset (Z80Regs * regs, int int_cycles, int int_irqtime)
 {
   /* reset PC and the rest of main registers: */
-  regs->PC.W = regs->R.W = 0x0000;
+  regs->PC.W = regs->R = 0x00;
 
   regs->AF.W = regs->BC.W = regs->DE.W = regs->HL.W =
     regs->AFs.W = regs->BCs.W = regs->DEs.W = regs->HLs.W =

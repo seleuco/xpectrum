@@ -30,7 +30,8 @@
 #define   r_SP    regs->SP.W
 #define   r_IFF1  regs->IFF1
 #define   r_IFF2  regs->IFF2
-#define   r_R     regs->R.W
+#define   r_R     regs->R
+#define   r_R7    regs->R7
 
 #define   r_AF    regs->AF.W
 #define   r_A     regs->AF.B.h
@@ -107,8 +108,8 @@
 #define SubCycles(n) regs->ICount+=(n)
 
 //#define AddR(n) r_R = (r_R+(n))
-#define AddR(n) r_R = ((r_R & 0x80) | ((r_R+(n)) & 0x7f ))
-#define SubR(n) r_R = ((r_R & 0x80) | ((r_R-(n)) & 0x7f ))
+#define AddR(n) r_R = r_R + n;
+#define SubR(n) r_R = r_R - n;
 
 //#define AddR(n) r_R |= ((r_R+(n)) & 0x7f)
 //#define SubR(n) r_R |= ((r_R-(n)) & 0x7f)
@@ -518,9 +519,17 @@
 #define IN_PORT(reg,port)    \
                  ula_contend_port_early(port); \
                  ula_contend_port_late(port); \
-                 (reg)=Z80InPort(regs,port);  \
+                 reg=Z80InPort(regs,port);  \
+                 if( ( port & 0x8002 ) == 0 && ( model == ZX_128 || model == ZX_128_USR0 || model == ZX_PLUS2 ) ) \
+                        {  \
+                        Z80OutPort(regs,0x7ffd, reg ); \
+                        } \
                  r_F = ( r_F & FLAG_C) | sz53p_table[(reg)];
 
 #define IN_PORT_NC(reg,port)    \
-                 (reg)=Z80InPort(regs,port);  \
+                 reg=Z80InPort(regs,port);  \
+                 if( ( port & 0x8002 ) == 0 && ( model == ZX_128 || model == ZX_128_USR0 || model == ZX_PLUS2 ) ) \
+                        {  \
+                        Z80OutPort(regs, 0x7ffd, reg ); \
+                        } \
                  r_F = ( r_F & FLAG_C) | sz53p_table[(reg)];
