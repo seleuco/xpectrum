@@ -1,4 +1,5 @@
 #summary xpectrum generic help.
+#labels Featured
 
 
 *GAME FORMATS*
