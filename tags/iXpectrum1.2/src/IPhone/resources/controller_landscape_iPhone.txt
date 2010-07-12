@@ -1,0 +1,25 @@
+0,0,0,0               //downleft
+420,255,60,65           //down
+0,0,0,0               //downright
+0,260,55,60                //left
+55,260,55,60               //right
+0,0,0,0               //upleft
+420,190,60,65             //up
+0,0,0,0               //upright
+150,270,65,50            //start
+280,270,65,50              //select
+0,0,75,40                 //lpad
+405,0,75,40                  //rpad
+0,0,0,0              //menu (select+ start) YO b + up
+0,190,100,70              //button down left X + A
+380,50,100,70             //buttondown  --> X
+0,0,0,0              //button down right X + B
+0,120,100,70            //buton left  --> A
+380,120,100,70              //button right -> B
+0,0,0,0              //button up left --> X + A
+0,45,100,70            //button up --> Y
+0,0,0,0              //button up right Y + B
+75,0,75,40             //lpad2
+330,0,75,40             //rpad2
+150,0,175,50 //showkyboard
+25
