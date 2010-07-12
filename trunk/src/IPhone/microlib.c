@@ -31,18 +31,23 @@
 #define RGB2565L(R, G, B) ((R >> 3) << 11) | (( G >> 2) << 5 ) \
     | (( B >> 3 ) << 0 )
 
+#define RGBA5551(R, G, B) ((R >> 3) << 10) | (( G >> 3) << 5 ) | (( B >> 3 ) << 0 )
+
 char local_buffer[320 * 240];
 char * video_screen8 = NULL;
 
 extern void iphone_UpdateScreen();
 extern unsigned short* screenbuffer;
 extern __emulation_paused;
+extern int safe_render_path;
 
 unsigned long gp2x_pad_status = 0;
 
 static microlib_inited = 0;
 
-unsigned short local_palette[256];
+unsigned short rgb565_local_palette[256];
+unsigned short rgb555_local_palette[256];
+
 
 /* Audio Resources */
 #define AUDIO_BUFFERS 6
@@ -83,7 +88,16 @@ void set_palette(palette_t palette){
 	int i;
 	for(i = 0; i < 256; i++)
 	{
-		local_palette[i] = RGB2565L(palette[i].r, palette[i].g, palette[i].b);
+
+		rgb565_local_palette[i] = RGB2565L(palette[i].r, palette[i].g, palette[i].b);
+		rgb555_local_palette[i] = RGBA5551(palette[i].r ,palette[i].g,palette[i].b);
+
+		/*
+		local_palette[4*i]   = palette[i].r;
+		local_palette[4*i+1] = palette[i].g;
+		local_palette[4*i+2] = palette[i].b;
+		local_palette[4*i+3] = 0;
+		*/
 	}
 }
 
@@ -104,11 +118,29 @@ void dump_video()
         usleep(100);
 	 }
 
+	 if(screenbuffer==NULL)return;
+	 //unsigned char *p=(unsigned char *)screenbuffer;
+
 	 unsigned short *color;
 	 int i=0;
+
+	 unsigned short*pt;
+
+	 if(safe_render_path)
+	   pt = rgb555_local_palette;
+     else
+       pt = rgb565_local_palette;
+
 	 for(i = 0; i < (320 * 240); i++)
 	 {
-		screenbuffer[i] = local_palette[(unsigned char)local_buffer[i]];
+		screenbuffer[i] = pt[(unsigned char)local_buffer[i]];
+
+		/*
+		 p[4*i] =   local_palette[4*(unsigned char)local_buffer[i]];
+		 p[4*i+1] = local_palette[4*((unsigned char)local_buffer[i])+1];
+		 p[4*i+2] = local_palette[4*((unsigned char)local_buffer[i])+2];
+		 p[4*i+3] = 0;
+		 */
 	 }
 
 	 iphone_UpdateScreen();

@@ -7,7 +7,6 @@
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
@@ -16,10 +15,14 @@
    Copyright (c) 2010 Seleuco. Based in ZodTTD code.
    
 */
+
+//http://code.google.com/p/metasyntactic/source/browse/trunk/MetasyntacticShared/Classes/ImageUtilities.m?r=4217
+
 #import "helpers.h"
 #import "NowPlayingController.h"
 #import "HelpController.h"
 #import "OptionsController.h"
+#import "DonateController.h"
 #import <pthread.h>
 
 #include "shared.h"
@@ -29,6 +32,7 @@
 
 #define IPHONE_MENU_HELP                5
 #define IPHONE_MENU_OPTIONS             6
+#define IPHONE_MENU_DONATE              9
 
 #define IPHONE_MENU_QUIT                7
 #define IPHONE_MENU_MAIN_LOAD           8
@@ -40,17 +44,24 @@
 		(point.x <= rect.origin.x + rect.size.width) &&			\
 		(point.y <= rect.origin.y + rect.size.height)) ? 1 : 0)  
 
+#define RADIANS( degrees ) ( degrees * M_PI / 180 )
 
-unsigned short* screenbuffer;
+unsigned short* screenbuffer = NULL;
+
+static unsigned short img_buffer[320 * 240 * 4];
 
 int iphone_menu = IPHONE_MENU_DISABLED;
 
 int iphone_controller_opacity = 50;
 int iphone_keyboard_opacity = 50;
 int iphone_is_landscape = 0;
-int iphone_smooth = 0;
+int iphone_smooth_land = 0;
+int iphone_smooth_port = 0;
 int iphone_keep_aspect_ratio = 0;
 
+int isIpad = 0;
+int safe_render_path = 1;
+int enable_dview = 0;
 
 int controller = 1;
 int hide_keyboard = 0;
@@ -74,10 +85,7 @@ static unsigned long oldtouches[10];
 
 extern unsigned short* videobuffer;
 
-
 extern int iphone_main (int argc, char **argv);
-
-
 
 //SHARED y GLOBALES!
 pthread_t	main_tid;
@@ -93,9 +101,9 @@ void iphone_UpdateScreen()
   //usleep(100);
   //sched_yield();
 
-  [sharedInstance performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:NO];  
+ [sharedInstance performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:NO];  
+ 
 }
-
 
 void* app_Thread_Start(void* args)
 {
@@ -105,83 +113,167 @@ void* app_Thread_Start(void* args)
 	return NULL;
 }
 
+
+@implementation ScreenLayer
+
++ (id) defaultActionForKey:(NSString *)key
+{
+    return nil;
+}
+
+- (id)init {
+//printf("Crean layer %ld\n",self);
+	if (self = [super init])
+	{		    
+	    if(safe_render_path)
+	    {
+	       	      
+	       screenbuffer = img_buffer;
+	       	        
+	       CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();    
+           bitmapContext = CGBitmapContextCreate(
+             screenbuffer,
+             320,
+             240,
+             /*8*/5, // bitsPerComponent
+             /*4*320*/2*320, // bytesPerRow
+             colorSpace,
+             kCGImageAlphaNoneSkipFirst  | kCGBitmapByteOrder16Little/*kCGImageAlphaNoneSkipLast */);
+
+            CFRelease(colorSpace);
+            
+        }
+        else
+        {	   
+		    CFMutableDictionaryRef dict;
+			int w = rEmulatorFrame.size.width;
+			int h = rEmulatorFrame.size.height;
+			
+	    	int pitch = w * 2, allocSize = 2 * w * h;
+	    	char *pixelFormat = "565L";
+			 
+			dict = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
+											 &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+			CFDictionarySetValue(dict, kCoreSurfaceBufferGlobal, kCFBooleanTrue);
+			CFDictionarySetValue(dict, kCoreSurfaceBufferMemoryRegion,
+								 @"IOSurfaceMemoryRegion");
+			CFDictionarySetValue(dict, kCoreSurfaceBufferPitch,
+								 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &pitch));
+			CFDictionarySetValue(dict, kCoreSurfaceBufferWidth,
+								 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &w));
+			CFDictionarySetValue(dict, kCoreSurfaceBufferHeight,
+								 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &h));
+			CFDictionarySetValue(dict, kCoreSurfaceBufferPixelFormat,
+								 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, pixelFormat));
+			CFDictionarySetValue(dict, kCoreSurfaceBufferAllocSize,
+								 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &allocSize));
+			
+			_screenSurface = CoreSurfaceBufferCreate(dict);
+			
+			screenbuffer = CoreSurfaceBufferGetBaseAddress(_screenSurface);		 		 		
+		 }
+		        		
+        //rotateTransform = CGAffineTransformMakeRotation(RADIANS(90));
+        rotateTransform = CGAffineTransformIdentity;
+        self.affineTransform = rotateTransform;
+                       		
+		if(iphone_smooth_land && iphone_is_landscape || iphone_smooth_port && !iphone_is_landscape)
+		{
+		   [self setMagnificationFilter:kCAFilterLinear];
+  	       [self setMinificationFilter:kCAFilterLinear];
+		}
+		else
+		{
+
+  	       [self setMagnificationFilter:kCAFilterNearest];
+		   [self setMinificationFilter:kCAFilterNearest];
+  	    } 
+  	    
+  	    if (0) {
+		    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+            [[NSNotificationCenter defaultCenter] addObserver:self 
+                                                     selector:@selector(orientationChanged:) 
+                                                         name:@"UIDeviceOrientationDidChangeNotification" 
+                                                       object:nil];
+		}
+		
+	}
+	return self;
+}
+	
+- (void) orientationChanged:(NSNotification *)notification
+{
+    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    if (orientation == UIDeviceOrientationLandscapeLeft) {
+        rotateTransform = CGAffineTransformMakeRotation(RADIANS(90));
+    } else if (orientation == UIDeviceOrientationLandscapeRight) {
+        rotateTransform = CGAffineTransformMakeRotation(RADIANS(270));
+    }
+    
+}	
+
+- (void)display {
+        
+    if(safe_render_path)
+    {
+   
+        CGImageRef cgImage = CGBitmapContextCreateImage(bitmapContext);
+    
+        self.contents = (id)cgImage;
+    
+        CFRelease(cgImage);
+        
+    }
+    else
+    {
+	    CoreSurfaceBufferLock(_screenSurface, 3);
+	
+	    self.contents = nil;
+	    //self.affineTransform = CGAffineTransformIdentity;
+	     self.affineTransform = rotateTransform;
+	    self.contents = (id)_screenSurface;
+	    		
+	    CoreSurfaceBufferUnlock(_screenSurface);
+    }   
+    
+}
+
+- (void)dealloc {
+        
+            
+    if(bitmapContext!=nil)
+    {
+       CFRelease(bitmapContext);
+       bitmapContext=nil;
+    }   
+    
+    [super dealloc];
+}
+@end
+
 @implementation ScreenView
+
+
++ (Class) layerClass
+{
+    return [ScreenLayer class];
+}
+
+
 - (id)initWithFrame:(CGRect)frame {
 	if ((self = [super initWithFrame:frame])!=nil) {
-		//NSLog(@"Inicializando initWithFrame\n");
-		CFMutableDictionaryRef dict;
-		int w = 320; //rect.size.width;
-		int h = 240; //rect.size.height;
 		
-    	int pitch = w * 2, allocSize = 2 * w * h;
-    	char *pixelFormat = "565L";
-		
-  		self.opaque = YES;
-  		self.clearsContextBeforeDrawing = NO;
-  		self.userInteractionEnabled = NO;
-  		self.multipleTouchEnabled = NO;
-  		self.contentMode = UIViewContentModeTopLeft;
-
- 
-		dict = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
-										 &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-		CFDictionarySetValue(dict, kCoreSurfaceBufferGlobal, kCFBooleanTrue);
-		CFDictionarySetValue(dict, kCoreSurfaceBufferMemoryRegion,
-							 @"IOSurfaceMemoryRegion");
-		CFDictionarySetValue(dict, kCoreSurfaceBufferPitch,
-							 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &pitch));
-		CFDictionarySetValue(dict, kCoreSurfaceBufferWidth,
-							 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &w));
-		CFDictionarySetValue(dict, kCoreSurfaceBufferHeight,
-							 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &h));
-		CFDictionarySetValue(dict, kCoreSurfaceBufferPixelFormat,
-							 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, pixelFormat));
-		CFDictionarySetValue(dict, kCoreSurfaceBufferAllocSize,
-							 CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &allocSize));
-		
-		CoreSurfaceBufferRef _screenSurface = CoreSurfaceBufferCreate(dict);
-		CoreSurfaceBufferLock(_screenSurface, 3);
-		  
-		screenLayer = [[CALayer layer] retain];
-
-		if(!iphone_is_landscape) //Portrait
-		{
-			screenLayer.frame = CGRectMake(0.0f, 0.0f, 319.0f, 239.0f);
-		   [ screenLayer setOpaque: YES ];
-		}
-		else
-		{				
-		   if(!iphone_keep_aspect_ratio)
-			  screenLayer.frame = CGRectMake(0.0f, 0.0f, 480.0f, 320.0f);
-		   else
-		      screenLayer.frame = CGRectMake(28.0f, 1.0f, 424.0f, 318.0f);//keep aspect
-				
-		   [ screenLayer setOpaque:YES ];
-		}
-		
-		if(iphone_smooth==0)
-		{
-		   [screenLayer setMinificationFilter:kCAFilterNearest];
-		   [screenLayer setMagnificationFilter:kCAFilterNearest];
-		}
-		else
-		{
-		   [screenLayer setMagnificationFilter:kCAFilterLinear];
-  	       [screenLayer setMinificationFilter:kCAFilterLinear];
-  	    }  
-		
-		screenLayer.contents = (id)_screenSurface;
-		[[self layer] addSublayer:screenLayer];
-		
-    	CoreSurfaceBufferUnlock(_screenSurface);
-
-		screenbuffer = CoreSurfaceBufferGetBaseAddress(_screenSurface);
 		//[NSThread setThreadPriority:0.0];
 		//MODO ALTERNATIVO DE HACER EL UPDATE
 		//[NSThread detachNewThreadSelector:@selector(updateScreen) toTarget:self withObject:nil];
 				
 	}
     
+    self.opaque = YES;
+    self.clearsContextBeforeDrawing = NO;
+    self.multipleTouchEnabled = NO;
+	self.userInteractionEnabled = NO;
+        
     sharedInstance = self;
     	
 	return self;
@@ -189,14 +281,83 @@ void* app_Thread_Start(void* args)
 
 - (void)dealloc
 {
-	screenbuffer == NULL;
-	[ screenLayer release ];
+	//screenbuffer == NULL;
+	//[ screenLayer release ];
 	[ super dealloc ];
 }
 
 - (void)drawRect:(CGRect)rect
 {
+    //printf("Draw rect\n");
+    // UIView uses the existence of -drawRect: to determine if should allow its CALayer
+    // to be invalidated, which would then lead to the layer creating a backing store and
+    // -drawLayer:inContext: being called.
+    // By implementing an empty -drawRect: method, we allow UIKit to continue to implement
+    // this logic, while doing our real drawing work inside of -drawLayer:inContext:
+    
+   // if(1)return;
+      
+   /*
+    CGImageRef cgImage = CGBitmapContextCreateImage(bitmapContext);
+        
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGRect area;
+    
+        if(!iphone_is_landscape) //Portrait
+		{
 
+			area= rPortraitSurfaceviewFrame;			
+		  
+		}
+		else
+		{	
+			   			
+		   if(!iphone_keep_aspect_ratio)
+			  area= rLandscapeNokeepAspectSurfaceviewFrame;
+		   else
+		   {
+		      area.origin.x = 0;
+		      area.origin.y = 0; 
+		      area.size.width = rLandscapeKeepAspectSurfaceviewFrame.size.width;//keep aspect
+		      area.size.height = rLandscapeKeepAspectSurfaceviewFrame.size.height;//keep aspect
+		   }
+				
+		}
+    */
+    //CGContextTranslateCTM(context, 0, area.size.height);
+	
+	//CGContextScaleCTM(context, 1.0, -1.0);
+	
+	//CGContextSetAllowsAntialiasing(context,false);
+	
+    //CGContextSetShouldAntialias(context, false);
+    
+    //CGContextSetInterpolationQuality(context,kCGInterpolationNone);
+	
+    //CGContextDrawImage(context, area, cgImage);
+    
+    //self.layer.contents = (id)cgImage;
+    
+    
+    //UIImage *newUIImage = [UIImage imageWithCGImage:cgImage];
+    //[newUIImage drawInRect:rect];
+    //[newUIImage release];
+    
+    
+	/*    
+	CFURLRef url = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, CFSTR("image.png"), kCFURLPOSIXPathStyle, false);
+	
+	CFStringRef type = kUTTypePNG; // or kUTTypeBMP if you like
+	CGImageDestinationRef dest = CGImageDestinationCreateWithURL(url, type, 1, 0);
+	
+	CGImageDestinationAddImage(dest, cgImage, 0);
+	*/
+	
+	//CFRelease(cgImage);
+	//CFRelease(bitmapContext);
+	//CGImageDestinationFinalize(dest);
+	//free(rgba);
+    
 }
 
 - (void)dummy
@@ -240,6 +401,10 @@ void* app_Thread_Start(void* args)
 	    {
            iphone_menu = IPHONE_MENU_OPTIONS;
 	    }
+	    else if(buttonIndex == 2)    
+	    {
+           iphone_menu = IPHONE_MENU_DONATE;
+	    }
 	    else	    
 	    {
            iphone_menu = IPHONE_MENU_DISABLED;
@@ -265,6 +430,25 @@ void* app_Thread_Start(void* args)
 
            [addController release];
 	  }
+	  
+	  if(iphone_menu == IPHONE_MENU_DONATE)
+	  {
+                     
+	        UIAlertView *thksAlert = [[UIAlertView alloc] initWithTitle:@"Thanks for your support!" 
+															  message:[NSString stringWithFormat:@"With your help I will improve the emulator and support future OS changes"] 
+															 delegate:self 
+													cancelButtonTitle:@"OK" 
+													otherButtonTitles: nil];
+	
+	       [thksAlert show];
+	       [thksAlert release];
+	 
+           DonateController *addController =[DonateController alloc];
+                                   
+           [self presentModalViewController:addController animated:YES];
+
+           [addController release];
+	  }
 
 	}
 }
@@ -275,19 +459,34 @@ void* app_Thread_Start(void* args)
 
 	Options *op = [[Options alloc] init];
 	   
-    iphone_keep_aspect_ratio = [op keepAspectRatio];
     
-    if(iphone_smooth != [op smoothed] )
+    
+    if(iphone_smooth_port != [op smoothedPort] 
+        || iphone_smooth_land != [op smoothedLand] 
+        || safe_render_path != [op safeRenderPath]
+        || iphone_keep_aspect_ratio != [op keepAspectRatio]
+        )
     {
-        iphone_smooth = [op smoothed];
+        iphone_keep_aspect_ratio = [op keepAspectRatio];
+        iphone_smooth_land = [op smoothedLand];
+        iphone_smooth_port = [op smoothedPort];
+        safe_render_path = [op safeRenderPath];
              
        [screenView removeFromSuperview];
        [screenView release];
        [imageView removeFromSuperview];
        [imageView release];
+       
+       if(imageBorder!=nil)
+       {
+         [imageBorder removeFromSuperview];
+         [imageBorder release];
+         imageBorder= nil;
+       }
   
        [self buildPortrait];  
     }
+    
     
     [op release];
     
@@ -321,27 +520,31 @@ void* app_Thread_Start(void* args)
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	UIActionSheet *alert = [[UIActionSheet alloc] initWithTitle:
 	   @"Choose an option from the menu. Press cancel to go back." delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil 
-	   otherButtonTitles:@"Help",@"Options",@"Cancel", nil];
-	[alert showInView:screenView];
+	   otherButtonTitles:@"Help",@"Options",@"Donate",@"Cancel", nil];
+	[alert showInView:imageView];
 	[alert release];
     [pool release];
 }
+
 
 - (void)startEmu:(char*)path {
 	int i = 0;
 	 
     iphone_menu = IPHONE_MENU_DISABLED;
 		
-	self.view.frame = CGRectMake(0.0f, 0.0f, 320.0f, 480.0f);
+	//self.view.frame = [[UIScreen mainScreen] bounds];//rMainViewFrame;
+		
 	Options *op = [[Options alloc] init];
 	    
-    iphone_smooth = [op smoothed];
+    iphone_smooth_land = [op smoothedLand];
+    iphone_smooth_port = [op smoothedPort];
     iphone_keep_aspect_ratio = [op keepAspectRatio];
+    safe_render_path = [op safeRenderPath];
     
     [op release];
-		
+    		
     [self buildPortrait];
-		
+				
     pthread_create(&main_tid, NULL, app_Thread_Start, NULL);
 		
 	struct sched_param    param;
@@ -353,7 +556,31 @@ void* app_Thread_Start(void* args)
     {
              fprintf(stderr, "Error setting pthread priority\n");
     }
+	//iPAD test
+	//[NSThread detachNewThreadSelector:@selector(updateScreen2) toTarget:self withObject:nil];
+}
 
+- (void)updateScreen2
+{
+   //[NSThread setThreadPriority:1.0];
+   //printf("PING\n");
+   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+   while(__emulation_run)
+   {
+	  //printf("updaing\n");
+	  //[self performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:NO];
+	  [screenView setNeedsDisplay];
+	  [self.view setNeedsDisplay];
+	  [self.view addSubview:nil];
+	
+	  //[UIImageView setNeedsDisplay];
+      //usleep(16666);//60hz
+      usleep(20000);//50hz
+      //usleep(25000);//40hz
+      //usleep(33333);//30hz
+      //sched_yield();
+   }
+   [pool release];  
 }
 
 - (void)loadView {
@@ -362,10 +589,22 @@ void* app_Thread_Start(void* args)
 	rect.origin.x = rect.origin.y = 0.0f;
 	self.view = [[UIView alloc] initWithFrame:rect];
     self.view.backgroundColor = [UIColor blackColor];
+    
+    BOOL iPad = NO;
+	UIDevice* dev = [UIDevice currentDevice];
+    if ([dev respondsToSelector:@selector(isWildcat)])
+    {
+       iPad = [dev isWildcat];
+    }
+	
+	isIpad = iPad != NO;
+	//isIpad = 1;
 	
 }
 
 -(void)viewDidLoad{	
+
+   [ self getConf];
 
 	//[self.view addSubview:self.imageView];
  	
@@ -373,15 +612,15 @@ void* app_Thread_Start(void* args)
 	
 	//self.navigationItem.hidesBackButton = YES;
 	
-    //self.view.opaque = YES;
+    self.view.opaque = YES;
 	self.view.clearsContextBeforeDrawing = NO; //Performance?
-	//self.view.userInteractionEnabled = YES;
+	self.view.userInteractionEnabled = YES;
 	
 	self.view.multipleTouchEnabled = YES;
-	//self.view.exclusiveTouch = YES;
+	self.view.exclusiveTouch = YES;
 	
     //self.view.multipleTouchEnabled = NO; investigar porque se queda
-	self.view.contentMode = UIViewContentModeTopLeft;
+	//self.view.contentMode = UIViewContentModeTopLeft;
 	
 	//[[self.view layer] setMagnificationFilter:kCAFilterNearest];
 	//[[self.view layer] setMinificationFilter:kCAFilterNearest];
@@ -389,12 +628,16 @@ void* app_Thread_Start(void* args)
 	[NSThread setThreadPriority:1.0];
 	
 	loop = nil;
+	dview = nil;
 	touchTimer = nil;
 	
+
 }
 
 - (void)drawRect:(CGRect)rect
 {
+        
+    
 }
 
 -(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
@@ -407,15 +650,23 @@ void* app_Thread_Start(void* args)
   __emulation_paused = 1;
   usleep(100000);//ensure some frames displayed
 
+        
   [screenView removeFromSuperview];
   [screenView release];
   
   if(!hide_keyboard)
   {
-  [imageView removeFromSuperview];
-  [imageView release];
+     [imageView removeFromSuperview];
+     [imageView release];
   }
   else hide_keyboard = 0;
+  
+  if(imageBorder!=nil)
+  {
+     [imageBorder removeFromSuperview];
+     [imageBorder release];
+     imageBorder= nil;
+  }
 
 	if((self.interfaceOrientation ==  UIDeviceOrientationLandscapeLeft) || (self.interfaceOrientation == UIDeviceOrientationLandscapeRight)){
 	    [self buildLandscape];	        
@@ -433,21 +684,55 @@ void* app_Thread_Start(void* args)
    [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
    [UIView setAnimationDuration:0.50];
    */
+   
+   
    if(controller)
-      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_hs%d.png", 0]]];
+   {
+      if(isIpad)
+        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_portrait_iPad.png"]]];
+      else
+        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_portrait_iPhone.png"]]];
+   }   
    else
-      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_hs%d.png", 0]]];
-   imageView.frame = CGRectMake(0.0f, 240.0f, 320.0f, 240.0f); // Set the frame in which the UIImage should be drawn in.
+   {
+      if(isIpad)
+        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_portrait_iPad.png"]]];
+      else
+        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_portrait_iPhone.png"]]];
+   }   
+   
+   imageView.frame = rPortraitImageViewFrame; // Set the frame in which the UIImage should be drawn in.
+   
    imageView.userInteractionEnabled = NO;
    imageView.multipleTouchEnabled = NO;
    imageView.clearsContextBeforeDrawing = NO;
-   [imageView setOpaque:YES];
+   //[imageView setOpaque:YES];
     if(controller)
        [imageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
     else
        [imageView setAlpha:((float)iphone_keyboard_opacity / 100.0f)];
    [self.view addSubview: imageView]; // Draw the image in self.view.
    //[UIView commitAnimations];
+   
+  /////////////////
+  if(enable_dview)
+  {
+	  if(dview!=nil)
+	  {
+	    [dview removeFromSuperview];
+	    [dview release];
+	  }  	 
+	
+	  dview = [[DView alloc] initWithFrame:self.view.bounds];
+	  
+	  [self.view addSubview:dview];   
+	
+	  [self filldrectsController];
+	  [self filldrectsKeyboard];
+	  
+	  [dview setNeedsDisplay];
+  }
+  ////////////////
 }
 
 - (void)buildPortrait {
@@ -456,11 +741,26 @@ void* app_Thread_Start(void* args)
    [ self getControllerCoords:0 ];
    [ self getKeyboardCoords:0 ];
    __emulation_run = 1;
-   screenView = [ [ScreenView alloc] initWithFrame: CGRectMake(0, 0, 320, 480)];
+   
+   //screenView = [ [ScreenView alloc] initWithFrame: [[UIScreen mainScreen] bounds] ];
+   
+   if(!iphone_keep_aspect_ratio && isIpad)
+		screenView = [ [ScreenView alloc] initWithFrame: rPortraitNoKeepAspectViewFrame];	  
+   else
+        screenView = [ [ScreenView alloc] initWithFrame: rPortraitViewFrame];
+               
    [self.view addSubview: screenView];
    
    [self buildPortraitImageView];
-
+   
+   if(safe_render_path)
+   {
+       imageBorder = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"borde.png"]]];
+       imageBorder.frame = rPortraitBorderFrame;       
+       //isIpad ? CGRectMake(0, 0, 768, 576 ) : CGRectMake(0, 0, 320, 240 );
+       [self.view addSubview: imageBorder];
+   }    
+   
 }
 
 - (void)buildLandscapeImageView{
@@ -469,15 +769,28 @@ void* app_Thread_Start(void* args)
    [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
    [UIView setAnimationDuration:0.50];
 */
-   if(controller)//TEST CODE: cambio 0 por 1
-      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_fs%d.png", 2]]];			
+   if(controller)
+   {
+      if(isIpad)
+        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_landscape_iPad.png"]]];
+      else  
+        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_landscape_iPhone.png"]]];
+   }   			
    else
-      imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_fs%d.png", 0]]];
-   imageView.frame = CGRectMake(0.0f, 0.0f, 480.0f, 320.0f); // Set the frame in which the UIImage should be drawn in.
+   {
+      if(isIpad)
+         imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_landscape_iPad.png"]]];
+      else
+         imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_landscape_iPhone.png"]]];
+   }   
+   
+   imageView.frame = rLandscapeImageViewFrame; // Set the frame in which the UIImage should be drawn in.
+   
+   
    imageView.userInteractionEnabled = NO;
    imageView.multipleTouchEnabled = NO;
    imageView.clearsContextBeforeDrawing = NO;
-  [imageView setOpaque:YES];
+  //[imageView setOpaque:YES];
    if(controller)
       [imageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
    else
@@ -487,6 +800,27 @@ void* app_Thread_Start(void* args)
   
      [self.view addSubview: imageView]; // Draw the image in self.view.
   //[UIView commitAnimations];
+  
+  //////////////////
+  if(enable_dview)
+  {
+	  if(dview!=nil)
+	  {
+        [dview removeFromSuperview];
+        [dview release];
+      }	 	  
+	  
+	  dview = [[DView alloc] initWithFrame:self.view.bounds];
+		 	  
+	  [self filldrectsController];
+	  [self filldrectsKeyboard];
+	  
+	  [self.view addSubview:dview];   
+	  [dview setNeedsDisplay];
+	  
+	 
+  }
+  /////////////////	
 }
 
 - (void)buildLandscape{
@@ -495,23 +829,36 @@ void* app_Thread_Start(void* args)
    [ self getControllerCoords:1 ];
    [ self getKeyboardCoords:1 ];
    __emulation_run = 1;
-    screenView = [ [ScreenView alloc] initWithFrame: CGRectMake(0, 0, 480, 320)];			
+   
+   //screenView = [ [ScreenView alloc] initWithFrame: [[UIScreen mainScreen] bounds] ];
+      
+   if(!iphone_keep_aspect_ratio && !isIpad)
+		screenView = [ [ScreenView alloc] initWithFrame: rLandscapeNoKeepAspectViewFrame];	  
+   else
+        screenView = [ [ScreenView alloc] initWithFrame: rLandscapeViewFrame];
+         
+   //screenView = [ [ScreenView alloc] initWithFrame: rlandscapeViewFrame];			
+    			
    [self.view addSubview: screenView];
    
    [self buildLandscapeImageView];
-		
+	
 }
 
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
-{	    
+{	 
+
   if(controller)
   {
       //test code 
-      if(iphone_is_landscape)
-         [self touchesController2:touches withEvent:event];else
+      //if(iphone_is_landscape)
+         //[self touchesController2:touches withEvent:event];else
       
-      [self touchesController:touches withEvent:event];
+      if(isIpad)
+        [self touchesControllerv1:touches withEvent:event];
+      else
+        [self touchesControllerv2:touches withEvent:event];
   }
   else
   {
@@ -976,7 +1323,7 @@ int lastY = 0;
 			    if(touchcount > 1)continue;
                 [self showKey:rSPECKEY_SHIFT];
 			}	
-			
+						
 			else if (MyCGRectContainsPoint(rSPECKEY_SHIFT2, point)) {
 			    isShiftKey = 2;
 			    if(touchcount > 1)continue;
@@ -1129,6 +1476,7 @@ int lastY = 0;
                  [self buildLandscapeImageView]; 
                else
                  [self buildPortraitImageView];
+                                  
                break;
 			}
 		    else if (MyCGRectContainsPoint(rHideKeyboard, point) || MyCGRectContainsPoint(rHideKeyboard2, point)) {
@@ -1155,8 +1503,8 @@ int lastY = 0;
       [self showKey:rSPECKEY_SYMB2];      	  
 }
 
-#if 1
-- (void)touchesController:(NSSet *)touches withEvent:(UIEvent *)event
+
+- (void)touchesControllerv2:(NSSet *)touches withEvent:(UIEvent *)event
 {	    
     
   int touchstate[10];
@@ -1332,7 +1680,7 @@ int lastY = 0;
 
 				}
 			}
-			else if (MyCGRectContainsPoint(rShowController, point)) {
+			else if (MyCGRectContainsPoint(rShowKeyboard, point)) {
 			   if(!emulating) continue;
                controller = 0;
                ext_keyboard = 1;
@@ -1400,22 +1748,7 @@ int lastY = 0;
     }
 }
 
-
-- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
-	[self touchesBegan:touches withEvent:event];
-}
-
-- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
-	[self touchesBegan:touches withEvent:event];
-}
-
-- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
-	[self touchesBegan:touches withEvent:event];
-}
-
-#else
-
-- (void)touchesController:(NSSet *)touches withEvent:(UIEvent *)event {	
+- (void)touchesControllerv1:(NSSet *)touches withEvent:(UIEvent *)event {	
 	int i;
 	//Get all the touches.
 	NSSet *allTouches = [event allTouches];
@@ -1553,7 +1886,7 @@ int lastY = 0;
 					}
 				}
 			}
-			else if (MyCGRectContainsPoint(rShowController, point)) {
+			else if (MyCGRectContainsPoint(rShowKeyboard, point)) {
                controller = 0;
                [imageView removeFromSuperview];
                [imageView release];
@@ -1573,14 +1906,11 @@ int lastY = 0;
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
 	[self touchesBegan:touches withEvent:event];
-
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
 	[self touchesBegan:touches withEvent:event];
-
 }
-#endif
 
 
 - (void)getControllerCoords:(int)orientation {
@@ -1589,11 +1919,17 @@ int lastY = 0;
 	
 	if(!orientation)
 	{
-		fp = fopen([[NSString stringWithFormat:@"%scontroller_hs%d.txt", get_resource_path("/"), 0] UTF8String], "r");
+		if(isIpad)
+		  fp = fopen([[NSString stringWithFormat:@"%scontroller_portrait_iPad.txt", get_resource_path("/")] UTF8String], "r");
+		else
+		  fp = fopen([[NSString stringWithFormat:@"%scontroller_portrait_iPhone.txt", get_resource_path("/")] UTF8String], "r");
     }
 	else
 	{
-		fp = fopen([[NSString stringWithFormat:@"%scontroller_fs%d.txt", get_resource_path("/"), 0] UTF8String], "r");
+		if(isIpad)
+		   fp = fopen([[NSString stringWithFormat:@"%scontroller_landscape_iPad.txt", get_resource_path("/")] UTF8String], "r");
+		else
+		   fp = fopen([[NSString stringWithFormat:@"%scontroller_landscape_iPhone.txt", get_resource_path("/")] UTF8String], "r");
 	}
 	
 	if (fp) 
@@ -1653,11 +1989,17 @@ int lastY = 0;
 	
 	if(!orientation)
 	{
-		fp = fopen([[NSString stringWithFormat:@"%skeyboard_hs%d.txt", get_resource_path("/"), 0] UTF8String], "r");
+		if(isIpad)
+		  fp = fopen([[NSString stringWithFormat:@"%skeyboard_portrait_iPad.txt", get_resource_path("/")] UTF8String], "r");
+		else
+		  fp = fopen([[NSString stringWithFormat:@"%skeyboard_portrait_iPhone.txt", get_resource_path("/")] UTF8String], "r");
     }
 	else
 	{
-		fp = fopen([[NSString stringWithFormat:@"%skeyboard_fs%d.txt", get_resource_path("/"), 0] UTF8String], "r");
+		if(isIpad)
+		   fp = fopen([[NSString stringWithFormat:@"%skeyboard_landscape_iPad.txt", get_resource_path("/")] UTF8String], "r");
+		else
+		   fp = fopen([[NSString stringWithFormat:@"%skeyboard_landscape_iPhone.txt", get_resource_path("/")] UTF8String], "r");
 	}
 	
 	if (fp) 
@@ -1675,9 +2017,7 @@ int lastY = 0;
 				result = strtok(NULL, ",");
 				i2++;
 			}
-			
-
-			
+						
 			switch(i)
 			{
     		case 0:    rSPECKEY_1   	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
@@ -1739,6 +2079,52 @@ int lastY = 0;
   }
 }
 
+
+- (void)getConf{
+    char string[256];
+    FILE *fp;
+	
+	if(isIpad)
+	   fp = fopen([[NSString stringWithFormat:@"%sconfig_iPad.txt", get_resource_path("/")] UTF8String], "r");
+	else
+	   fp = fopen([[NSString stringWithFormat:@"%sconfig_iPhone.txt", get_resource_path("/")] UTF8String], "r");
+	   	
+	if (fp) 
+	{
+
+		int i = 0;
+        while(fgets(string, 256, fp) != NULL && i < 10) 
+       {
+			char* result = strtok(string, ",");
+			int coords[4];
+			int i2 = 1;
+			while( result != NULL && i2 < 5 )
+			{
+				coords[i2 - 1] = atoi(result);
+				result = strtok(NULL, ",");
+				i2++;
+			}
+			
+			
+			switch(i)
+			{
+    		case 0:    rEmulatorFrame   	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 1:    rPortraitViewFrame     	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 2:    rPortraitNoKeepAspectViewFrame = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;    		
+    		case 3:    rPortraitImageViewFrame     	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 4:    rPortraitBorderFrame     	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;    		    		
+    		case 5:    rLandscapeViewFrame = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;    		    		
+    		case 6:    rLandscapeNoKeepAspectViewFrame = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;
+    		case 7:    rLandscapeImageViewFrame  	= CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;    		
+            case 8:    rLoopImageMask = CGRectMake( coords[0], coords[1], coords[2], coords[3] ); break;    	
+            case 9:    enable_dview = coords[0]; break;
+			}
+      i++;
+    }
+    fclose(fp);
+  }
+}
+
 - (void)didReceiveMemoryWarning {
 	[super didReceiveMemoryWarning]; // Releases the view if it doesn't have a superview
 	// Release anything that's not essential, such as cached data
@@ -1746,10 +2132,99 @@ int lastY = 0;
 
 
 - (void)dealloc {
+ 
     if(loop!=nil)
 	   [loop release];
+    if(dview!=nil)
+	   [dview release];	   
 	[super dealloc];
 }
 
+- (void)filldrectsController {
+
+    		drects[0]=DownLeft;
+    		drects[1]=Down;
+    		drects[2]=DownRight;
+    		drects[3]=Left;
+    		drects[4]=Right;
+    		drects[5]=UpLeft;
+    		drects[6]=Up;
+    		drects[7]=UpRight;
+    		drects[8]=Select;
+    		drects[9]=Start;
+    		drects[10]=LPad;
+    		drects[11]=RPad;
+    		drects[12]=Menu;
+    		drects[13]=ButtonDownLeft;
+    		drects[14]=ButtonDown;
+    		drects[15]=ButtonDownRight;
+    		drects[16]=ButtonLeft;
+    		drects[17]=ButtonRight;
+    		drects[18]=ButtonUpLeft;
+    		drects[19]=ButtonUp;
+    		drects[20]=ButtonUpRight;
+    		drects[21]=LPad2;
+    		drects[22]=RPad2;
+    		drects[23]=rShowKeyboard;
+            ndrects = 24;        
+}
+
+
+
+- (void)filldrectsKeyboard{
+
+    		drects2[0]=    rSPECKEY_1;
+    		drects2[1]=    rSPECKEY_2;
+    		drects2[2]=    rSPECKEY_3;
+    		drects2[3]=   rSPECKEY_4;
+    		drects2[4]=    rSPECKEY_5;
+    		drects2[5]=    rSPECKEY_6;
+    		drects2[6]=    rSPECKEY_7;
+    		drects2[7]=    rSPECKEY_8;
+    		drects2[8]=    rSPECKEY_9;
+    		drects2[9]=    rSPECKEY_0;
+    		
+    		drects2[10]=   rSPECKEY_Q;
+    		drects2[11]=   rSPECKEY_W;
+    		drects2[12]=  rSPECKEY_E;
+    		drects2[13]=  rSPECKEY_R;
+    		drects2[14]=   rSPECKEY_T;
+    		drects2[15]=   rSPECKEY_Y;
+    		drects2[16]=  rSPECKEY_U;
+    		drects2[17]=   rSPECKEY_I;
+    		drects2[18]=   rSPECKEY_O;
+    		drects2[19]=   rSPECKEY_P;
+    		
+    		drects2[20]=   rSPECKEY_A;
+    		drects2[21]=   rSPECKEY_S;
+    		drects2[22]=  rSPECKEY_D;
+    		drects2[23]=   rSPECKEY_F;
+    		drects2[24]=   rSPECKEY_G;
+    		drects2[25]=   rSPECKEY_H;
+    		drects2[26]=   rSPECKEY_J;
+    		drects2[27]=   rSPECKEY_K;
+    		drects2[28]=  rSPECKEY_L;
+            drects2[29]=   rSPECKEY_ENTER;    		
+
+    		drects2[30]=  rSPECKEY_SHIFT;
+    		drects2[31]=  rSPECKEY_Z;
+    		drects2[32]=  rSPECKEY_X;
+    		drects2[33]=  rSPECKEY_C;
+    		drects2[34]=   rSPECKEY_V;
+    		drects2[35]=   rSPECKEY_B;
+    		drects2[36]=   rSPECKEY_N;
+    		drects2[37]=  rSPECKEY_M;
+    		drects2[38]=  rSPECKEY_SYMB;
+            drects2[39]=   rSPECKEY_SPACE;
+            drects2[40]=   rShowController;
+            
+            drects2[41]=  rHideKeyboard;
+            drects2[42]=   rHideKeyboard2;
+    		
+    		drects2[43]=   rSPECKEY_SHIFT2;
+    		drects2[44]=   rSPECKEY_SYMB2;
+    		
+            ndrects2 = 45;        
+}
 
 @end

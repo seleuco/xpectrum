@@ -14,9 +14,11 @@ OBJECTS =   IPhone/iph_main.o   \
             IPhone/Bootstrapper.o   \
             IPhone/NowPlayingController.o   \
             IPhone/HelpController.o \
+            IPhone/DonateController.o \
             IPhone/OptionsController.o \
             IPhone/helpers.o   \
             IPhone/MagnifierView.o   \
+            IPhone/DView.o   \
             main.o                          \
             font.o                          \
             IPhone/microlib.o               \

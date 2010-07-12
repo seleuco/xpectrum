@@ -1,0 +1,10 @@
+0,0,320,240//EmulatorFrame
+0,0,319,240//PortraitViewFrame
+0,0,319,240//PortraitNokeepAspectViewFrame
+0,240,320,240//PortraitImageViewFrame
+0,0,320,240//PortraitBorderFrame
+28,1,424,318//LandscapeViewFrame
+0,0,480,320//LandscapeNokeepAspectViewFrame
+0,0,480,320//LandscapeImageViewFrame
+15,15,30,30//rLoopImageMask
+0//drawcoords

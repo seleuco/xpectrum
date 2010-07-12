@@ -1,0 +1,26 @@
+0,673,85,95//DownLeft*
+82,673,71,95//Down*
+150,673,85,95//DownRight*
+0,612,120,61//Left*
+120,612,120,61//Right*
+0,527,85,85//UpLeft*
+82,515,70,96//Up*
+150,527,85,85//UpRight*
+550,700,120,70//start*
+385,700,121,70//select*
+0,0,100,80//lpad
+924,0,100,80//rpad
+0,0,0,0//menu (select+ start) YO b + up
+0,0,0,0//button down left* X + A
+0,420,100,90//buttondown*  --> X
+0,0,0,0//button down right X + B
+0,290,100,90//buton left * --> A
+850,100,175,660//button right* -> B
+0,0,0,0//button up left* --> Y + A
+0,150,100,90//button up* --> Y
+0,0,0,0//button up right* Y + B
+0,0,0,0//lpad2
+0,0,0,0//rpad2
+230,0,601,500//showkyboard*
+25
+
