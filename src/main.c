@@ -232,7 +232,7 @@ inline int min(int a, int b) {
   return a < b ? a : b;
 }
 
-int k =0;
+//int k =0;
 void SyncFreq()
 {
     unsigned time;
@@ -301,10 +301,13 @@ void load_mconfig()
         fclose(fp);
         read = 1;
     }
-    if (mconfig.id != 0xABCD0017 || !read)
+    if (mconfig.id != 0xABCD0018 || !read)
     {
-        mconfig.id = 0xABCD0017;
-#if defined(IPHONE) || defined(ANDROID)
+        mconfig.id = 0xABCD0018;
+#if defined(IPHONE)
+        mconfig.zx_screen_mode = 0;
+        mconfig.frameskip = 1;
+#elif defined(ANDROID)
         mconfig.zx_screen_mode = 0;
         mconfig.frameskip = 2;
 #else
@@ -1390,9 +1393,10 @@ void credits()
 
 
 #if defined(IPHONE)
-    y = 4;
-    v_putcad((40-38)/2,y,130,"iXpectrum v1.1 by D.Valdeita (Seleuco)");y += 2;
-    v_putcad((40-33)/2,y,130,"Using some iPhone code from ZodTTD");y += 3;
+    y = 3;
+    v_putcad((40-38)/2,y,130,"iXpectrum v1.2 by D.Valdeita (Seleuco)");y += 2;
+    v_putcad((40-33)/2,y,130,"Using some iPhone code from ZodTTD");y += 2;
+    v_putcad((40-32)/2,y,130,"iPad support & test by  Ryosaebaa");y += 3;
 
     v_putcad((40-32)/2,y,132,"Based on GP2XPectrum 1.9 work of");y += 2;
     v_putcad((40-17)/2,y,132,"Hermes/PS2Reality");y += 2;
@@ -3243,6 +3247,7 @@ int save_state(int st)
     int count,n,m;
     char *mname;
     char savefile[256];
+    char old_savefile[256];
     BZFILE * my_bzip;
     int bzip_err = 0;
     int file_error = 0;
@@ -3254,6 +3259,7 @@ int save_state(int st)
 
 	sprintf(photo_name,"%s/saves/%s.tmp",globalpath,mname);
     sprintf(savefile,"%s/saves/%s.sav",globalpath,mname);
+    sprintf(old_savefile,"%s/saves/%s-old.sav",globalpath,mname);
     fp = fopen(photo_name,"wb");
     if (fp == NULL) return 0;
 
@@ -3326,7 +3332,10 @@ int save_state(int st)
     fclose(fp);
     if (!file_error)
     {
-        remove(savefile);
+
+        //remove(savefile);
+    	remove(old_savefile);
+    	rename(savefile,old_savefile);
         rename(photo_name,savefile);
     }
     else remove(photo_name);

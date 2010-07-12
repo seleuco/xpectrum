@@ -18,38 +18,14 @@
 */
 
 #import <UIKit/UIKit.h>
+#import <UIKit/UIWebView.h>
 
-@interface Options : NSObject
-{
-   NSMutableArray*	  optionsArray;
-   @public  int keepAspectRatio;
-   @public  int smoothedPort;
-   @public  int smoothedLand;
-   @public  int safeRenderPath;
-}
-
-- (void)loadOptions;
-- (void)saveOptions;
-
-@property (readwrite,assign) int keepAspectRatio;
-@property (readwrite,assign) int smoothedPort;
-@property (readwrite,assign) int smoothedLand;
-@property (readwrite,assign) int safeRenderPath;
-
-@end
-
-
-@interface OptionsController : UIViewController
+@interface DonateController : UIViewController  <UIWebViewDelegate>
 {
 
+   UIWebView *aWebView;
    UINavigationBar    * navBar;
-   UISwitch*		  switchKeepAspect;
-   UISwitch*		  switchSmoothedPort;
-   UISwitch*		  switchSmoothedLand;
-   UISwitch*		  switchSafeRender;
+   @public BOOL bIsDismissed ;
 }
-
-- (void)optionChanged:(id)sender;
-- (void)setOptions;
-
+ @property (readwrite,assign)  BOOL bIsDismissed;
 @end

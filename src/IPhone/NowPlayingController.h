@@ -30,6 +30,8 @@
 #import <sys/time.h>
 
 #import "MagnifierView.h"
+#import "DView.h"
+
 
 /*
 struct myGSPathPoint {
@@ -153,9 +155,35 @@ typedef struct {
 } myGSEvent;
 */
 
+
+//CGRect rPortraitSurfaceviewFrame;
+//CGRect rLandscapeNokeepAspectSurfaceviewFrame;
+//CGRect rLandscapeKeepAspectSurfaceviewFrame;
+//CGRect rMainViewFrame;
+
+CGRect rEmulatorFrame;
+CGRect rPortraitViewFrame;
+CGRect rPortraitNoKeepAspectViewFrame;
+CGRect rPortraitImageViewFrame;
+CGRect rPortraitBorderFrame;
+CGRect rLandscapeViewFrame;
+CGRect rLandscapeNoKeepAspectViewFrame;
+CGRect rLandscapeImageViewFrame;
+CGRect rLoopImageMask;
+
+@interface ScreenLayer : CALayer {
+	CoreSurfaceBufferRef _screenSurface;
+	CGAffineTransform rotateTransform;
+	CGContextRef bitmapContext;
+}
+
+- (void) orientationChanged:(NSNotification *)notification;
+
+@end
+
 @interface ScreenView : UIView
 {
-	CALayer						    *screenLayer;
+
 }
 
 - (id)initWithFrame:(CGRect)frame;
@@ -171,7 +199,9 @@ typedef struct {
   UIWindow		* window;
   UIView			* screenView;
   UIImageView	    * imageView;
+  UIImageView	    * imageBorder;
   MagnifierView   *loop;
+  DView   *dview;
   NSTimer *touchTimer;
 
   //joy controller
@@ -258,10 +288,14 @@ typedef struct {
   CoreSurfaceBufferRef			_screenSurface;
   CALayer						    *screenLayer;
   //NSTimer						*	timer;
+
 }
 
 - (void)getControllerCoords:(int)orientation;
 - (void)getKeyboardCoords:(int)orientation;
+- (void)getConf;
+- (void)filldrectsController;
+- (void)filldrectsKeyboard;
 //- (void)mouseEvent:(myGSEvent*)event;
 
 - (void)startEmu:(char*)path;

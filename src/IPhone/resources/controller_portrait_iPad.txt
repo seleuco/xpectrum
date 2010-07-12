@@ -1,0 +1,25 @@
+0,803,85,85//DownLeft*
+82,803,71,96//Down*
+150,803,85,85//DownRight*
+0,742,120,61//Left*
+120,742,120,61//Right*
+0,657,85,85//UpLeft*
+82,645,70,96//Up*
+150,657,85,85//UpRight*
+237,926,144,58//Select*
+383,926,144,58//Start*
+0,582,99,55//LPad*
+666,582,101,55//RPad*
+273,583,225,49//Menu*
+530,809,70,71//ButtonDownLeft (X + A)
+601,809,76,71//ButtonDown X*
+678,809,74,71//ButtonDownRight (X + B)
+530,728,82,80//ButtonLeft A*
+660,728,108,80//ButtonRight B*
+530,657,70,71//ButtonUpLeft (A + Y)
+601,657,76,71//ButtonUp Y
+678,657,74,71//ButtonUpRight (B + Y)*
+0,0,0,0//LPad2*
+0,0,0,0//RPad2
+0,0,768,576//showkyboard
+100

@@ -19,10 +19,15 @@
 
 #import "OptionsController.h"
 #include <stdio.h>
+
+extern int isIpad;
+
 @implementation Options
 
 @synthesize keepAspectRatio;
-@synthesize smoothed;
+@synthesize smoothedLand;
+@synthesize smoothedPort;
+@synthesize safeRenderPath;
 
 - (id)init {
 
@@ -36,7 +41,7 @@
 
 - (void)loadOptions
 {
-	NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/options.bin";
+	NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/options_v2.bin";
 	
 	NSData *plistData;
 	id plist;
@@ -50,7 +55,6 @@
 											 mutabilityOption:NSPropertyListImmutable			 
 													   format:&format
 											 errorDescription:&error];
-	
 	if(!plist)
 	{
 		
@@ -60,8 +64,10 @@
 		
 		optionsArray = [[NSMutableArray alloc] init];
 		
-		keepAspectRatio=1;
-		smoothed=0;
+		keepAspectRatio=isIpad?0:1;
+		smoothedPort=isIpad?1:0;
+		smoothedLand=1;
+		safeRenderPath = isIpad?1:0;
 		
 		[self saveOptions];
 	}
@@ -70,7 +76,9 @@
 		optionsArray = [[NSMutableArray alloc] initWithArray:plist];
 		
 		keepAspectRatio = [[[optionsArray objectAtIndex:0] objectForKey:@"KeepAspect"] intValue];
-		smoothed = [[[optionsArray objectAtIndex:0] objectForKey:@"Smoothed"] intValue];		
+		smoothedLand = [[[optionsArray objectAtIndex:0] objectForKey:@"SmoothedLand"] intValue];
+		smoothedPort = [[[optionsArray objectAtIndex:0] objectForKey:@"SmoothedPort"] intValue];	
+		safeRenderPath =  isIpad?1:[[[optionsArray objectAtIndex:0] objectForKey:@"safeRenderPath"] intValue];
 	}
 		
 }
@@ -82,11 +90,13 @@
 	[optionsArray removeAllObjects];
 	[optionsArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:
 							 [NSString stringWithFormat:@"%d", keepAspectRatio], @"KeepAspect",
-							 [NSString stringWithFormat:@"%d", smoothed], @"Smoothed",
+							 [NSString stringWithFormat:@"%d", smoothedLand], @"SmoothedLand",
+							 [NSString stringWithFormat:@"%d", smoothedPort], @"SmoothedPort",
+							 [NSString stringWithFormat:@"%d", safeRenderPath], @"safeRenderPath",
 							 nil]];	
 
 	
-    NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/options.bin";
+    NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/options_v2.bin";
 	NSData *plistData;
 	
 	NSString *error;
@@ -146,7 +156,11 @@
    [ self.view addSubview: navBar ];
    
    	UILabel *myLabel1 = [[UILabel alloc] initWithFrame:CGRectMake(10, 100, 200, 25)];
-	myLabel1.text = @"Keep Aspect Ratio";
+   	if(isIpad)
+   	  myLabel1.text = @"Portrait original size";
+   	else
+	  myLabel1.text = @"Landscape Keep Aspect";
+	  
     [self.view addSubview:myLabel1];
    
     switchKeepAspect = [[UISwitch alloc] initWithFrame:CGRectMake(225 ,100, 0, 0)];  
@@ -154,12 +168,32 @@
     [switchKeepAspect addTarget:self action:@selector(optionChanged:) forControlEvents:UIControlEventValueChanged];
    
     UILabel *myLabel2 = [[UILabel alloc] initWithFrame:CGRectMake(10, 100+50, 200, 25)];
-	myLabel2.text = @"Smoothed Screeen";
+	myLabel2.text = @"Smoothed Portrait";
     [self.view addSubview:myLabel2];
    
-    switchSmoothed = [[UISwitch alloc] initWithFrame:CGRectMake(225 ,100+50, 0, 0)];
-    [ self.view addSubview: switchSmoothed ];
-    [switchSmoothed addTarget:self action:@selector(optionChanged:) forControlEvents:UIControlEventValueChanged];
+    switchSmoothedPort = [[UISwitch alloc] initWithFrame:CGRectMake(225 ,100+50, 0, 0)];
+    [ self.view addSubview: switchSmoothedPort ];
+    [switchSmoothedPort addTarget:self action:@selector(optionChanged:) forControlEvents:UIControlEventValueChanged];
+   
+    
+    UILabel *myLabel22 = [[UILabel alloc] initWithFrame:CGRectMake(10, 100+(50*2), 200, 25)];
+	myLabel22.text = @"Smoothed Landscape";
+    [self.view addSubview:myLabel22];
+   
+    switchSmoothedLand = [[UISwitch alloc] initWithFrame:CGRectMake(225 ,100+(50*2), 0, 0)];
+    [ self.view addSubview: switchSmoothedLand ];
+    [switchSmoothedLand addTarget:self action:@selector(optionChanged:) forControlEvents:UIControlEventValueChanged];
+
+    if(!isIpad)
+    {
+	    UILabel *myLabel3 = [[UILabel alloc] initWithFrame:CGRectMake(10, 100+(50*3), 200, 25)];
+		myLabel3.text = @"Safe Render Path";
+	    [self.view addSubview:myLabel3];
+	   
+	    switchSafeRender = [[UISwitch alloc] initWithFrame:CGRectMake(225 ,100+(50*3), 0, 0)];
+	    [ self.view addSubview: switchSafeRender ];
+	    [switchSafeRender addTarget:self action:@selector(optionChanged:) forControlEvents:UIControlEventValueChanged];
+    }
    
     [self setOptions];
 }
@@ -188,10 +222,18 @@
     Options *op = [[Options alloc] init];
 	    		
 	op.keepAspectRatio = [switchKeepAspect isOn];
-	op.smoothed =  [switchSmoothed isOn];
+	op.smoothedPort =  [switchSmoothedPort isOn];
+	op.smoothedLand =  [switchSmoothedLand isOn];
+	
+	if(isIpad)
+	   op.safeRenderPath = 1;
+	else
+	   op.safeRenderPath =  [switchSafeRender isOn];
 	
     [switchKeepAspect setOn: op.keepAspectRatio animated:NO];
-	[switchSmoothed setOn: op.smoothed animated:NO];
+	[switchSmoothedPort setOn: op.smoothedPort animated:NO];
+	[switchSmoothedLand setOn: op.smoothedLand animated:NO];
+	[switchSafeRender setOn: op.safeRenderPath animated:NO];
 	
 	[op saveOptions];
 		
@@ -203,9 +245,13 @@
      Options *op = [[Options alloc] init];
 	    	
      [switchKeepAspect setOn:[op keepAspectRatio] animated:NO];
-	 [switchSmoothed setOn:[op smoothed] animated:NO];
+	 [switchSmoothedPort setOn:[op smoothedPort] animated:NO];
+	 [switchSmoothedLand setOn:[op smoothedLand] animated:NO];
+	 if(!isIpad)
+	   [switchSafeRender setOn:[op safeRenderPath] animated:NO];
 		
 	 [op release];
 }
+
 
 @end

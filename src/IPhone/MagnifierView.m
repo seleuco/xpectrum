@@ -21,6 +21,8 @@
 
 #import <QuartzCore/QuartzCore.h>  
 
+extern CGRect rLoopImageMask;
+
 @implementation MagnifierView
 @synthesize viewref, touchPoint;
 
@@ -29,7 +31,7 @@
         // Initialization code
 		self.backgroundColor = [UIColor clearColor];
 		self.multipleTouchEnabled = NO;
-	   self.userInteractionEnabled = NO;
+	    self.userInteractionEnabled = NO;
 	
 	   
     }
@@ -56,8 +58,15 @@
 										CGImageGetDataProvider(maskRef), 
 										NULL, 
 										true);
+										
+										
+										
 	//Create Mask
-	CGImageRef subImage = CGImageCreateWithImageInRect(imageRef, CGRectMake(touchPoint.x-15, touchPoint.y-15, 30, 30));
+	//CGImageRef subImage = CGImageCreateWithImageInRect(imageRef, CGRectMake(touchPoint.x-15, touchPoint.y-15, 30, 30));
+	CGImageRef subImage = CGImageCreateWithImageInRect(imageRef, CGRectMake(touchPoint.x-rLoopImageMask.origin.x, 
+	  touchPoint.y-rLoopImageMask.origin.y, rLoopImageMask.size.width, rLoopImageMask.size.height));
+	
+	
 	//CGImageRef subImage = CGImageCreateWithImageInRect(imageRef, CGRectMake(touchPoint.x-18, touchPoint.y-18, 36, 36));
 	//CGImageRef subImage = CGImageCreateWithImageInRect(imageRef, CGRectMake(touchPoint.x-25, touchPoint.y-25, 50, 50));
 	CGImageRef xMaskedImage = CGImageCreateWithMask(subImage, mask);
@@ -73,7 +82,7 @@
 	CGContextConcatCTM(context, xform);
 	CGRect area = CGRectMake(touchPoint.x-42, -touchPoint.y, 85, 85);
 	CGRect area2 = CGRectMake(touchPoint.x-40, -touchPoint.y+2, 80, 80);
-	
+		
 	CGContextDrawImage(context, area2, xMaskedImage);
 	CGContextDrawImage(context, area, overlay);
 }
