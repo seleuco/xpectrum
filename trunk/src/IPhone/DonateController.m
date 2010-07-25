@@ -20,6 +20,7 @@
 #import "DonateController.h"
 #include <stdio.h>
 
+extern iphone_menu;
 
 @implementation DonateController
 
@@ -42,7 +43,9 @@
 
 	struct CGRect rect = [[UIScreen mainScreen] bounds];
 	rect.origin.x = rect.origin.y = 0.0f;
-	self.view = [[UIView alloc] initWithFrame:rect];
+	UIView *view= [[UIView alloc] initWithFrame:rect];
+	self.view = view;
+	[view release];
     self.view.backgroundColor = [UIColor whiteColor];
     
    navBar = [ [ UINavigationBar alloc ] initWithFrame: CGRectMake(rect.origin.x, rect.origin.y, rect.size.width, 45.0f)];
@@ -50,7 +53,7 @@
 
    UINavigationItem *item = [[ UINavigationItem alloc ] initWithTitle:@"Donate" ];
    
-   UIBarButtonItem *backButton = [[[UIBarButtonItem alloc] initWithTitle:@"Quit" style:UIBarButtonItemStyleBordered target:[self parentViewController]  action:  @selector(done:) ] autorelease];
+   UIBarButtonItem *backButton = [[[UIBarButtonItem alloc] initWithTitle:@"Quit" style:UIBarButtonItemStyleBordered target:/*[self parentViewController]*/self action:  @selector(mydone:) ] autorelease];
    item.rightBarButtonItem = backButton;
   
    /*  
@@ -86,6 +89,7 @@
    //URL Requst Object
    NSURLRequest *requestObj = [NSURLRequest requestWithURL:url];
    
+   
    //load the URL into the web view.
    [aWebView loadRequest:requestObj];
       
@@ -103,8 +107,25 @@
 
 }
 
--(void)viewDidLoad{	
+-(void)mydone:(id)sender{
+   [aWebView setDelegate:nil];
+   [aWebView stopLoading]; 
+   [self dismissModalViewControllerAnimated:YES];
+   iphone_menu = 0; 
+}
 
+
+-(void)viewDidLoad{	
+   
+   
+   	        UIAlertView *thksAlert = [[UIAlertView alloc] initWithTitle:@"Thanks for your support!" 
+															  message:[NSString stringWithFormat:@"Many hours of work went into the creation of iXpectrum. If you find this application useful make a donation to the author.\n Everything is appreciated."] 
+															 delegate:self 
+													cancelButtonTitle:@"OK" 
+													otherButtonTitles: nil];
+	
+	       [thksAlert show];
+	       [thksAlert release];
      
 }
 
@@ -113,28 +134,35 @@
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error{
-    [navBar topItem].title = @"Error";
+    if(navBar!=nil && [navBar topItem]!= nil)
+      [navBar topItem].title = @"Error";
     if(error!=nil)
     {
-	UIAlertView *connectionAlert = [[UIAlertView alloc] initWithTitle:@"Connection Failed!" 
-															  message:[NSString stringWithFormat:@"There is no internet connection. Connect to the internet and try again.",[error localizedDescription]] 
-															 delegate:self 
-													cancelButtonTitle:@"OK" 
-													otherButtonTitles: nil];
-	
-	[connectionAlert show];
-	[connectionAlert release];
+		UIAlertView *connectionAlert = [[UIAlertView alloc] initWithTitle:@"Connection Failed!" 
+																  message:[NSString stringWithFormat:@"There is no internet connection. Connect to the internet and try again.",[error localizedDescription]] 
+																 delegate:self 
+														cancelButtonTitle:@"OK" 
+														otherButtonTitles: nil];
+		
+		[connectionAlert show];
+		[connectionAlert release];
 	}
 
 }
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType{
-   [navBar topItem].title = @"Wait... Loading!";
+    if(navBar!=nil && [navBar topItem]!= nil)
+      [navBar topItem].title = @"Wait... Loading!";
    return YES;
 }
 
 - (void)webViewDidFinishLoad:(UIWebView *)webView{
-   [navBar topItem].title = webView.request.URL.absoluteString;
+
+   if(navBar!=nil && webView!=nil)
+   {
+       if([navBar topItem]!= nil && webView.request!=nil)
+         [navBar topItem].title = webView.request.URL.absoluteString;
+   }  
 }
 
 
@@ -143,19 +171,26 @@
 }
 
 - (void)didReceiveMemoryWarning {
-	[super didReceiveMemoryWarning];
+	//[super didReceiveMemoryWarning];
 }
 
 
 - (void)dealloc {
    
-  [aWebView setDelegate:nil];
   
     if(navBar!=nil)
-      [navBar  release];
+    {
+       [navBar  release];
+       navBar = nil;
+    }  
     
     if(aWebView!=nil)
+    {
+       //[aWebView stopLoading]; 
+       [aWebView setDelegate:nil];       
        [aWebView release];
+       aWebView = nil;
+    }   
      
 	[super dealloc];
 }

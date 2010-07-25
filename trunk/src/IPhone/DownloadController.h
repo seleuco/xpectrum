@@ -19,16 +19,39 @@
 
 #import <UIKit/UIKit.h>
 #import <UIKit/UIWebView.h>
+#import <UIKit/UIProgressView.h>
+#import <UIKit/UIToolbar.h>
 
-@interface DonateController : UIViewController  <UIWebViewDelegate>
+@interface DownloadController : UIViewController  <UIWebViewDelegate>
 {
-
    UIWebView *aWebView;
-   UINavigationBar    * navBar;
+   //UINavigationBar    *navBar;
+
+   //NSURLConnection *connection;
+   NSURLRequest *dRequest;
+   NSMutableData *payload;
+
+   double  expected;
+   int isDownloading;
+
+   UIAlertView *progressAlert;
+   UIProgressView *progressView;
+   UILabel *navLabel;
+
    @public BOOL bIsDismissed ;
 }
 
--(void)mydone:(id)sender;
+  - (void)buttonBack;
+  - (void)buttonForward;
+  - (void)buttonStop;
+  - (void)buttonHome;
+
+  -(void)mydone:(id)sender;
+
+ - (void)connection:(NSURLConnection *)conn didReceiveResponse:(NSURLResponse *)response;
+ - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data;
+ - (void)connectionDidFinishLoading:(NSURLConnection *)conn;
+ - (void)connection:(NSURLConnection *)conn didFailWithError:(NSError *)error;
 
  @property (readwrite,assign)  BOOL bIsDismissed;
 @end

@@ -21,9 +21,6 @@
 
 @interface HelpController : UIViewController
 {
-
-   UITextView         *textView;
-   UINavigationBar    * navBar;
    @public BOOL bIsDismissed ;
 }
  @property (readwrite,assign)  BOOL bIsDismissed;

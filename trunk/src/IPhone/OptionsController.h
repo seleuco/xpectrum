@@ -26,6 +26,14 @@
    @public  int smoothedPort;
    @public  int smoothedLand;
    @public  int safeRenderPath;
+
+   @public  int tvFilterPort;
+   @public  int tvFilterLand;
+   @public  int scanlineFilterPort;
+   @public  int scanlineFilterLand;
+
+   @public  int cropBorderPort;
+   @public  int cropBorderLand;
 }
 
 - (void)loadOptions;
@@ -36,20 +44,41 @@
 @property (readwrite,assign) int smoothedLand;
 @property (readwrite,assign) int safeRenderPath;
 
+@property (readwrite,assign) int tvFilterPort;
+@property (readwrite,assign) int tvFilterLand;
+
+@property (readwrite,assign) int scanlineFilterPort;
+@property (readwrite,assign) int scanlineFilterLand;
+
+@property (readwrite,assign) int cropBorderPort;
+@property (readwrite,assign) int cropBorderLand;
+
 @end
 
 
-@interface OptionsController : UIViewController
+@interface OptionsController : UIViewController  <UITableViewDelegate, UITableViewDataSource>
 {
 
-   UINavigationBar    * navBar;
+   //UINavigationBar    * navBar;
    UISwitch*		  switchKeepAspect;
    UISwitch*		  switchSmoothedPort;
    UISwitch*		  switchSmoothedLand;
    UISwitch*		  switchSafeRender;
+
+   UISwitch*		  switchTvFilterPort;
+   //UISlider*		  sliderTvFilterPort;
+   UISwitch*		  switchScanlineFilterPort;
+   //UISlider*		  sliderScanlineFilterPort;
+
+   UISwitch*		  switchTvFilterLand;
+   UISwitch*		  switchScanlineFilterLand;
+
+   UISwitch*		  switchCropBorderLand;
+   UISwitch*		  switchCropBorderPort;
+
 }
 
 - (void)optionChanged:(id)sender;
-- (void)setOptions;
+//- (void)setOptions;
 
 @end

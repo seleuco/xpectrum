@@ -1,4 +1,4 @@
-iXpectrum v1.2 for Jailbroken iPhone, iPad & iPod Touch by David Valdeita (Seleuco)
+iXpectrum v1.3 for Jailbroken iPhone, iPad & iPod Touch by David Valdeita (Seleuco)
 
 Based in gp2xpectrum by Hermes/PS2Reality and continued by Metalbrain & Seleuco.
 
@@ -15,6 +15,22 @@ If you wish to colaborate, get the source code or port to another platform, take
 http://code.google.com/p/xpectrum/
 
 Also consider make a donation if you liked the emulator, so i can improve it.
+
+New in 1.3 (World Champion Edition)
+
+This new version is to thank you all for your suggestions and donations. Also to celebrate the recent Spanish football world cup win :)
+
+- Added "World Of Spectrum" Integration. Find & Download WoS game browser. (see http://www.worldofspectrum.org/)
+
+- Added ZIP file support.
+
+- Added scanlines & TV like filters.
+
+- Speccy border crop options.
+
+- Fixed missing line on 3GS. You may enable 'safe render path' on 3GS.
+
+- Fixed lots of Objective-C memory leaks.
 
 New in 1.2
 
@@ -80,6 +96,10 @@ there is also included the following games from the spanish's scene created by m
 
 -Cheril of the Bosque
 
+-Cheril Perils (ula+64 compatible)
+
+-Moggy Adventure
+
 -Sgt. Helmet Zero (ula+64 compatible)
 
 -Subaquatic (ula+64 compatible)
@@ -114,15 +134,25 @@ You can also use a rich GUI client like Filezilla to do a SFTP copy or maybe Win
 iPHONE & iPad
 -------------
 
-Tap over the options label (in portrait mode) to change the following options:
+Download games:
 
--Landscape Keeps Aspect. 'Enabled' keeps the aspect ratio in landscape mode; 'Disabled' will use all available screen.
+Tap over the options label and press the download option. A browser is open. Search for the game and click the corresponding download hyperlink. The game is downloaded on the downloads directory. Press 'A' to refesh the downloads directory if the game is not showed. You can also delete the game pressing 'Y'.
 
--Portrait original size (iPad only). Enable to draw spectrum screen at its original size.
+Tap over the options label (in portrait mode) and press options button to change the following settings:
 
--Smoothed Landscape or Smoothed portrait. Enable to apply a image filter over the emulator screen.
+-Landscape & Portrait Crop Speccy Border. 'Enable" to crops spectrum boder so you have more visible area.
 
--Safe Render Path (iPhone only). Enable at the expenses of performance for maximun compability. Slow in 3G.
+-Smoothed Landscape or Smoothed portrait. Enable to apply a smoothing image filter over the emulator screen.
+
+-TV Filter. Enable to apply a TV like filter over the image.
+
+-Sacanline Filter. Enable to apply a scanline filter over the image.
+
+-Landscape Keeps Aspect (iPhone only). 'Enabled' keeps the aspect ratio in landscape mode; 'Disabled' will use all available screen.
+
+-Original size (iPad only). Enable to draw spectrum screen at its original size on portrait mode.
+
+-Safe Render Path (iPhone only). Enable at the expenses of performance for maximun compability. Slow in 3G (not recomended unless you find any problem).
 
 You can tap in the speccy screen (in portrait mode) to change from the controller to the touch keyboard. Tape it again to go back to the controller.
 
@@ -203,8 +233,6 @@ Load State -> loads the previously save state of a game
 Save Keyboard -> saves the currently programmed keys for the current game. This way you won't have to define controls again each time you load the same game.
 
 Save State -> saves the state of a game
-
-Spectrum Screen or Full Screen -> activate/deactivate the full screen mode.
 
 Show FPS [on/off] -> show/hide the current frames per second.
 
@@ -326,6 +354,15 @@ History
 -------
 
 iXpectrum
+
+v.1.3 by Seleuco (2010/25/07)
+
+- Added "World Of Spectrum" Integration. Find & Download WoS game browser. (see http://www.worldofspectrum.org/)
+- Added ZIP file support.
+- Added scanlines & TV like filters.
+- Speccy Border crop options.
+- Fixed missing line on 3GS.
+- Fixed lots of Objective-C memory leaks.
 
 v.1.2 by Seleuco (2010/07/07)
 
@@ -519,4 +556,7 @@ v.1.9 by Seleuco (2010/23/02)
 v.1.9.1 by Seleuco (2010/04)
 - Added autoframeskip.
 - Minor changes.
+
+v.1.9.2 by Seleuco (2010/07)
+- Added ZLIB support
 

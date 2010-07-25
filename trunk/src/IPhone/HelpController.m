@@ -37,27 +37,32 @@
 }
 
 - (void)loadView {
+   
 
 	struct CGRect rect = [[UIScreen mainScreen] bounds];
 	rect.origin.x = rect.origin.y = 0.0f;
-	self.view = [[UIView alloc] initWithFrame:rect];
+	UIView *view= [[UIView alloc] initWithFrame:rect];
+	self.view = view;
+	[view release];
     self.view.backgroundColor = [UIColor whiteColor];
     
-   navBar = [ [ UINavigationBar alloc ] initWithFrame: CGRectMake(rect.origin.x, rect.origin.y, rect.size.width, 45.0f)];
+   UINavigationBar *navBar = [ [ UINavigationBar alloc ] initWithFrame: CGRectMake(rect.origin.x, rect.origin.y, rect.size.width, 45.0f)];
    [ navBar setDelegate: self ];
 
    UINavigationItem *item = [[ UINavigationItem alloc ] initWithTitle:@"Credits & Help" ];
-   UIBarButtonItem *backButton = [[[UIBarButtonItem alloc] initWithTitle:@"OK" style:UIBarButtonItemStyleBordered target:[self parentViewController]  action:  @selector(done:) ] autorelease];
+   UIBarButtonItem *backButton = [[UIBarButtonItem alloc] initWithTitle:@"OK" style:UIBarButtonItemStyleBordered target:[self parentViewController]   action:  @selector(done:) ];
    item.rightBarButtonItem = backButton;
+   [backButton release];
    [ navBar pushNavigationItem: item  animated:YES];
      
    [ self.view addSubview: navBar ];
+   [navBar release];
     
     
     FILE *file;
     char buffer[262144], buf[1024];
 
-    textView = [ [ UITextView alloc ] initWithFrame: CGRectMake(rect.origin.x, rect.origin.y + 45.0f, rect.size.width,rect.size.height - 45.0f )];
+    UITextView *textView = [ [ UITextView alloc ] initWithFrame: CGRectMake(rect.origin.x, rect.origin.y + 45.0f, rect.size.width,rect.size.height - 45.0f )];
 //        [ textView setTextSize: 12 ];
 
     textView.font = [UIFont fontWithName:@"Courier New" size:14.0];
@@ -80,11 +85,13 @@
             }
             fclose(file);
 
-            [ textView setText: [ [ NSString alloc ] initWithCString: buffer ]];
+            [ textView setText: [ [[ NSString alloc ] initWithCString: buffer ] autorelease]];
     }
 
     [ self.view addSubview: textView ];
-
+    [textView release];
+    
+    
 }
 
 -(void)viewDidLoad{	
@@ -101,9 +108,9 @@
 	[super didReceiveMemoryWarning];
 }
 
-
+ 
 - (void)dealloc {
-   
+       
 	[super dealloc];
 }
 
