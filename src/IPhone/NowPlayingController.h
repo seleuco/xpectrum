@@ -31,6 +31,7 @@
 
 #import "MagnifierView.h"
 #import "DView.h"
+#import "DownloadController.h"
 
 
 /*
@@ -196,13 +197,19 @@ CGRect rLoopImageMask;
 @interface NowPlayingController : UIViewController <UIActionSheetDelegate> 
 {
 
-  UIWindow		* window;
+  //UIWindow		    * window;
   UIView			* screenView;
   UIImageView	    * imageView;
   UIImageView	    * imageBorder;
-  MagnifierView   *loop;
-  DView   *dview;
-  NSTimer *touchTimer;
+  MagnifierView     * loop;
+  DView             * dview;
+  NSTimer           * touchTimer;
+  //NSAutoreleasePool * myPool;
+
+  //CoreSurfaceBufferRef			_screenSurface;
+  //CALayer						*screenLayer;
+
+  //DownloadController* downloadController;
 
   //joy controller
   CGRect ButtonUp;
@@ -285,11 +292,11 @@ CGRect rLoopImageMask;
   CGPoint lastLocation1;
   CGPoint lastLocation2;
 
-  CoreSurfaceBufferRef			_screenSurface;
-  CALayer						    *screenLayer;
   //NSTimer						*	timer;
 
 }
+
+
 
 - (void)getControllerCoords:(int)orientation;
 - (void)getKeyboardCoords:(int)orientation;
@@ -309,7 +316,7 @@ CGRect rLoopImageMask;
 - (void)hideKey;
 - (void) handleAction:(id)timerObj;
 - (void)touchesKeyboard:(NSSet *)touches withEvent:(UIEvent *)event;
-- (void)touchesController:(NSSet *)touches withEvent:(UIEvent *)event;
-- (void)touchesController2:(NSSet *)touches withEvent:(UIEvent *)event;
+- (void)touchesControllerv1:(NSSet *)touches withEvent:(UIEvent *)event;
+- (void)touchesControllerv2:(NSSet *)touches withEvent:(UIEvent *)event;
 
 @end

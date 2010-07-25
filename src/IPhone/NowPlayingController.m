@@ -11,7 +11,6 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-   
    Copyright (c) 2010 Seleuco. Based in ZodTTD code.
    
 */
@@ -23,6 +22,7 @@
 #import "HelpController.h"
 #import "OptionsController.h"
 #import "DonateController.h"
+#import "DownloadController.h"
 #import <pthread.h>
 
 #include "shared.h"
@@ -33,6 +33,7 @@
 #define IPHONE_MENU_HELP                5
 #define IPHONE_MENU_OPTIONS             6
 #define IPHONE_MENU_DONATE              9
+#define IPHONE_MENU_DOWNLOAD           11
 
 #define IPHONE_MENU_QUIT                7
 #define IPHONE_MENU_MAIN_LOAD           8
@@ -59,12 +60,23 @@ int iphone_smooth_land = 0;
 int iphone_smooth_port = 0;
 int iphone_keep_aspect_ratio = 0;
 
-int isIpad = 0;
+extern int isIpad;
 int safe_render_path = 1;
 int enable_dview = 0;
 
+int crop_border_land = 0;
+int crop_border_port = 0;
+int crop_state=0;
+
+int tv_filter_land = 0;
+int tv_filter_port = 0;
+
+int scanline_filter_land = 0;
+int scanline_filter_port = 0;
+
 int controller = 1;
 int hide_keyboard = 0;
+
 
 enum  { GP2X_UP=0x1,       GP2X_LEFT=0x4,       GP2X_DOWN=0x10,  GP2X_RIGHT=0x40,
 	    GP2X_START=1<<8,   GP2X_SELECT=1<<9,    GP2X_L=1<<10,    GP2X_R=1<<11,
@@ -87,6 +99,7 @@ extern unsigned short* videobuffer;
 
 extern int iphone_main (int argc, char **argv);
 
+
 //SHARED y GLOBALES!
 pthread_t	main_tid;
 int			__emulation_run = 0;
@@ -94,15 +107,15 @@ int        __emulation_paused = 0;
 
 static ScreenView *sharedInstance = nil;
 
-
 void iphone_UpdateScreen()
 {
   //return;
   //usleep(100);
   //sched_yield();
 
- [sharedInstance performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:NO];  
- 
+   if(sharedInstance==nil) return;
+    
+   [sharedInstance performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:NO];  
 }
 
 void* app_Thread_Start(void* args)
@@ -125,6 +138,9 @@ void* app_Thread_Start(void* args)
 //printf("Crean layer %ld\n",self);
 	if (self = [super init])
 	{		    
+	   bitmapContext = nil;
+	   _screenSurface = nil;
+	   
 	    if(safe_render_path)
 	    {
 	       	      
@@ -213,12 +229,67 @@ void* app_Thread_Start(void* args)
 }	
 
 - (void)display {
+
+   if((!iphone_is_landscape && crop_border_port) || (iphone_is_landscape && crop_border_land))//hay que hacer crop
+   {
+       //TODO: mejor 1.15 para iPhone si borde, resto 1.20
+       if(emulating && crop_state==0)
+       {
+           float factor = isIpad ? 1.20f : 1.15f;
+           CGRect r = sharedInstance.frame;
+           
+           int oldw = r.size.width;          
+           r.size.width = r.size.width * factor;
+           r.origin.x  = r.origin.x  - ((r.size.width - oldw)/2);
+           
+           int oldh = r.size.height; 
+		   r.size.height = r.size.height * factor;
+           r.origin.y  = r.origin.y  - ((r.size.height - oldh)/2);
+                      
+           sharedInstance.frame = r;
+           crop_state=1;
+    
+       }
+       else if(!emulating && crop_state==1)
+       {
+           /*
+           float factor = isIpad ? 1.20f : 1.15f;
+           CGRect r = sharedInstance.frame;
+           
+           int oldw = r.size.width;          
+           r.size.width = r.size.width / factor;
+           r.origin.x  = r.origin.x  + ((oldw - r.size.width)/2);
+           
+           int oldh = r.size.height; 
+		   r.size.height = r.size.height / factor;
+           r.origin.y  = r.origin.y  + ((oldh - r.size.height)/2);
+           */
+           CGRect r;
+           if(!iphone_is_landscape) //Portrait
+           {
+			   if(!iphone_keep_aspect_ratio)
+			     r = rPortraitNoKeepAspectViewFrame;
+			   else
+			     r = rPortraitViewFrame;  
+		   }  		
+		   else
+		   {			   			
+		      if(!iphone_keep_aspect_ratio)
+			    r = rLandscapeNoKeepAspectViewFrame;			    
+		      else
+		        r = rLandscapeImageViewFrame;
+		   }
+           
+           self.frame = r;           
+           crop_state=0;
+       }   
+   }
         
     if(safe_render_path)
     {
    
         CGImageRef cgImage = CGBitmapContextCreateImage(bitmapContext);
-    
+        
         self.contents = (id)cgImage;
     
         CFRelease(cgImage);
@@ -227,8 +298,9 @@ void* app_Thread_Start(void* args)
     else
     {
 	    CoreSurfaceBufferLock(_screenSurface, 3);
-	
+	    
 	    self.contents = nil;
+	    
 	    //self.affineTransform = CGAffineTransformIdentity;
 	     self.affineTransform = rotateTransform;
 	    self.contents = (id)_screenSurface;
@@ -240,12 +312,22 @@ void* app_Thread_Start(void* args)
 
 - (void)dealloc {
         
-            
+                    
     if(bitmapContext!=nil)
     {
+
        CFRelease(bitmapContext);
        bitmapContext=nil;
     }   
+    
+    if(_screenSurface!=nil)
+    {
+      //CoreSurfaceBufferLock(_screenSurface, 3);
+      CFRelease(_screenSurface);
+      //CoreSurfaceBufferUnlock(_screenSurface);
+       _screenSurface = nil;
+       self.contents = nil;
+    }
     
     [super dealloc];
 }
@@ -279,10 +361,14 @@ void* app_Thread_Start(void* args)
 	return self;
 }
 
+
 - (void)dealloc
 {
 	//screenbuffer == NULL;
 	//[ screenLayer release ];
+	
+	//sharedInstance = nil;
+	
 	[ super dealloc ];
 }
 
@@ -367,7 +453,7 @@ void* app_Thread_Start(void* args)
 
 - (void)updateScreen
 {
-   [NSThread setThreadPriority:1.0];
+   //[NSThread setThreadPriority:1.0];
 
    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
    while(__emulation_run)
@@ -403,6 +489,10 @@ void* app_Thread_Start(void* args)
 	    }
 	    else if(buttonIndex == 2)    
 	    {
+           iphone_menu = IPHONE_MENU_DOWNLOAD;
+	    }	    
+	    else if(buttonIndex == 3)    
+	    {
            iphone_menu = IPHONE_MENU_DONATE;
 	    }
 	    else	    
@@ -411,6 +501,8 @@ void* app_Thread_Start(void* args)
 	    }
 	  }
 	  
+	  //myPool = [[NSAutoreleasePool alloc] init];
+	     
 	  if(iphone_menu == IPHONE_MENU_HELP)
 	  {
 
@@ -419,6 +511,8 @@ void* app_Thread_Start(void* args)
            [self presentModalViewController:addController animated:YES];
 
            [addController release];
+           
+
 	  }
 	  
 	  if(iphone_menu == IPHONE_MENU_OPTIONS)
@@ -433,21 +527,22 @@ void* app_Thread_Start(void* args)
 	  
 	  if(iphone_menu == IPHONE_MENU_DONATE)
 	  {
-                     
-	        UIAlertView *thksAlert = [[UIAlertView alloc] initWithTitle:@"Thanks for your support!" 
-															  message:[NSString stringWithFormat:@"With your help I will improve the emulator and support future OS changes"] 
-															 delegate:self 
-													cancelButtonTitle:@"OK" 
-													otherButtonTitles: nil];
-	
-	       [thksAlert show];
-	       [thksAlert release];
-	 
+    
            DonateController *addController =[DonateController alloc];
                                    
            [self presentModalViewController:addController animated:YES];
 
            [addController release];
+	  }
+	  
+	  if(iphone_menu == IPHONE_MENU_DOWNLOAD)
+	  	  
+	  {                          
+           DownloadController *downloadController =[DownloadController alloc];
+                                                        
+           [self presentModalViewController:downloadController animated:YES];
+
+           [downloadController release];
 	  }
 
 	}
@@ -458,19 +553,32 @@ void* app_Thread_Start(void* args)
     [self dismissModalViewControllerAnimated:YES];
 
 	Options *op = [[Options alloc] init];
-	   
-    
-    
+		   
     if(iphone_smooth_port != [op smoothedPort] 
         || iphone_smooth_land != [op smoothedLand] 
         || safe_render_path != [op safeRenderPath]
         || iphone_keep_aspect_ratio != [op keepAspectRatio]
+        || crop_border_land != [op cropBorderLand]
+        || crop_border_port != [op cropBorderPort]
+        || tv_filter_land != [op tvFilterLand]
+        || tv_filter_port != [op tvFilterPort]
+        || scanline_filter_land != [op scanlineFilterLand]
+        || scanline_filter_port != [op scanlineFilterPort]        
         )
     {
         iphone_keep_aspect_ratio = [op keepAspectRatio];
         iphone_smooth_land = [op smoothedLand];
         iphone_smooth_port = [op smoothedPort];
         safe_render_path = [op safeRenderPath];
+        
+        crop_border_land = [op cropBorderLand];
+        crop_border_port = [op cropBorderPort];
+        
+        tv_filter_land = [op tvFilterLand];
+        tv_filter_port = [op tvFilterPort];
+        
+        scanline_filter_land = [op scanlineFilterLand];
+        scanline_filter_port = [op scanlineFilterPort];
              
        [screenView removeFromSuperview];
        [screenView release];
@@ -491,10 +599,14 @@ void* app_Thread_Start(void* args)
     [op release];
     
     iphone_menu = IPHONE_MENU_DISABLED;
+    
+    //[myPool release];
 }
 
 - (void)runMenu
 {
+  
+  if(__emulation_paused)return;
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   __emulation_paused = 1;
   iphone_menu = IPHONE_MENU_MAIN_LOAD;
@@ -510,6 +622,7 @@ void* app_Thread_Start(void* args)
       usleep(1000000);
     }
   }
+   usleep(100000);
   __emulation_paused = 0;
   [pool release];
 }
@@ -517,13 +630,22 @@ void* app_Thread_Start(void* args)
 - (void)runMainMenu
 {
 
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	UIActionSheet *alert = [[UIActionSheet alloc] initWithTitle:
 	   @"Choose an option from the menu. Press cancel to go back." delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil 
-	   otherButtonTitles:@"Help",@"Options",@"Donate",@"Cancel", nil];
-	[alert showInView:imageView];
+	   otherButtonTitles:@"Help",@"Options",@"Download",@"Donate",@"Cancel", nil];
+	/*   
+	if(isIpad)
+	  //[alert showInView:imageView];
+	  [alert showInView:self.view];
+	else
+	*/
+	  [alert showInView:self.view];
+	
 	[alert release];
-    [pool release];
+	
+	[pool release];
+    
 }
 
 
@@ -536,11 +658,21 @@ void* app_Thread_Start(void* args)
 		
 	Options *op = [[Options alloc] init];
 	    
+    
+    iphone_keep_aspect_ratio = [op keepAspectRatio];
     iphone_smooth_land = [op smoothedLand];
     iphone_smooth_port = [op smoothedPort];
-    iphone_keep_aspect_ratio = [op keepAspectRatio];
     safe_render_path = [op safeRenderPath];
-    
+        
+    crop_border_land = [op cropBorderLand];
+    crop_border_port = [op cropBorderPort];
+        
+    tv_filter_land = [op tvFilterLand];
+    tv_filter_port = [op tvFilterPort];
+        
+    scanline_filter_land = [op scanlineFilterLand];
+    scanline_filter_port = [op scanlineFilterPort];
+        
     [op release];
     		
     [self buildPortrait];
@@ -548,16 +680,20 @@ void* app_Thread_Start(void* args)
     pthread_create(&main_tid, NULL, app_Thread_Start, NULL);
 		
 	struct sched_param    param;
+ 
     //param.sched_priority = 63;
-    param.sched_priority = 46;
+    param.sched_priority = 46;  
     //param.sched_priority = 100;
+   
         
-    if(pthread_setschedparam(main_tid, SCHED_RR, &param) != 0)
+    if(pthread_setschedparam(main_tid, /*SCHED_RR*/ SCHED_OTHER, &param) != 0)
     {
              fprintf(stderr, "Error setting pthread priority\n");
     }
 	//iPAD test
 	//[NSThread detachNewThreadSelector:@selector(updateScreen2) toTarget:self withObject:nil];
+	
+
 }
 
 - (void)updateScreen2
@@ -587,19 +723,10 @@ void* app_Thread_Start(void* args)
 
 	struct CGRect rect = [[UIScreen mainScreen] bounds];
 	rect.origin.x = rect.origin.y = 0.0f;
-	self.view = [[UIView alloc] initWithFrame:rect];
-    self.view.backgroundColor = [UIColor blackColor];
-    
-    BOOL iPad = NO;
-	UIDevice* dev = [UIDevice currentDevice];
-    if ([dev respondsToSelector:@selector(isWildcat)])
-    {
-       iPad = [dev isWildcat];
-    }
-	
-	isIpad = iPad != NO;
-	//isIpad = 1;
-	
+	UIView *view= [[UIView alloc] initWithFrame:rect];
+	self.view = view;
+	[view release];
+    self.view.backgroundColor = [UIColor blackColor];	
 }
 
 -(void)viewDidLoad{	
@@ -611,6 +738,7 @@ void* app_Thread_Start(void* args)
 	//[ self getControllerCoords:0 ];
 	
 	//self.navigationItem.hidesBackButton = YES;
+	
 	
     self.view.opaque = YES;
 	self.view.clearsContextBeforeDrawing = NO; //Performance?
@@ -625,19 +753,18 @@ void* app_Thread_Start(void* args)
 	//[[self.view layer] setMagnificationFilter:kCAFilterNearest];
 	//[[self.view layer] setMinificationFilter:kCAFilterNearest];
 	
+	//kito
 	[NSThread setThreadPriority:1.0];
 	
 	loop = nil;
 	dview = nil;
 	touchTimer = nil;
 	
-
 }
 
 - (void)drawRect:(CGRect)rect
 {
-        
-    
+            
 }
 
 -(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
@@ -646,21 +773,26 @@ void* app_Thread_Start(void* args)
 }
 
 -(void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation {
-
+   
+   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+   
   __emulation_paused = 1;
   usleep(100000);//ensure some frames displayed
 
         
   [screenView removeFromSuperview];
   [screenView release];
-  
+  /*
   if(!hide_keyboard)
   {
+  */
+     hide_keyboard = 0;
      [imageView removeFromSuperview];
      [imageView release];
+  /*   
   }
   else hide_keyboard = 0;
-  
+  */
   if(imageBorder!=nil)
   {
      [imageBorder removeFromSuperview];
@@ -676,6 +808,8 @@ void* app_Thread_Start(void* args)
 	}
 	
 	__emulation_paused = 0;
+	
+	[pool release];
 }
 
 - (void)buildPortraitImageView {
@@ -738,11 +872,24 @@ void* app_Thread_Start(void* args)
 - (void)buildPortrait {
 
    iphone_is_landscape = 0;
+   crop_state = 0;
    [ self getControllerCoords:0 ];
    [ self getKeyboardCoords:0 ];
    __emulation_run = 1;
    
    //screenView = [ [ScreenView alloc] initWithFrame: [[UIScreen mainScreen] bounds] ];
+   
+   if(!isIpad)
+   {
+	   if(safe_render_path)//HACK
+	   {
+	       rPortraitViewFrame = CGRectMake(0,0,320,240);
+	   }
+	   else
+	   {
+	       rPortraitViewFrame = CGRectMake(0,0,319,240);
+	   }   
+   }
    
    if(!iphone_keep_aspect_ratio && isIpad)
 		screenView = [ [ScreenView alloc] initWithFrame: rPortraitNoKeepAspectViewFrame];	  
@@ -753,12 +900,73 @@ void* app_Thread_Start(void* args)
    
    [self buildPortraitImageView];
    
-   if(safe_render_path)
+   
+   if(safe_render_path || scanline_filter_port || tv_filter_port)
    {
+       //prueba para tiling!
+/*
        imageBorder = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"borde.png"]]];
-       imageBorder.frame = rPortraitBorderFrame;       
-       //isIpad ? CGRectMake(0, 0, 768, 576 ) : CGRectMake(0, 0, 320, 240 );
+       imageBorder.frame = rPortraitBorderFrame;
        [self.view addSubview: imageBorder];
+*/       
+             
+       UIImage *image1 = [UIImage imageNamed:[NSString stringWithFormat:@"borde.png"]];
+                                                                                                                                                 
+       UIGraphicsBeginImageContext(rPortraitBorderFrame.size);  
+       
+       //[image1 drawInRect: rPortraitBorderFrame];
+       
+       CGContextRef uiContext = UIGraphicsGetCurrentContext();
+             
+       CGContextTranslateCTM(uiContext, 0, rPortraitBorderFrame.size.height);
+	
+       CGContextScaleCTM(uiContext, 1.0, -1.0);
+
+       if(scanline_filter_port)
+       {       
+            
+          UIImage *image2 = [UIImage imageNamed:[NSString stringWithFormat: @"scanline-1.png"]];
+                        
+          CGImageRef tile = CGImageRetain(image2.CGImage);
+                   
+          CGContextSetAlpha(uiContext,((float)22 / 100.0f));   
+              
+          CGContextDrawTiledImage(uiContext, CGRectMake(0, 0, image2.size.width, image2.size.height), tile);
+       
+          CGImageRelease(tile);       
+       }
+
+       if(tv_filter_port)
+       {              
+          
+          UIImage *image3 = [UIImage imageNamed:[NSString stringWithFormat: @"crt-1.png"]];              
+          
+          CGImageRef tile = CGImageRetain(image3.CGImage);
+              
+          CGContextSetAlpha(uiContext,((float)19 / 100.0f));     
+          
+          CGContextDrawTiledImage(uiContext, CGRectMake(0, 0, image3.size.width, image3.size.height), tile);
+       
+          CGImageRelease(tile);       
+       }
+       
+       CGImageRef img = CGImageRetain(image1.CGImage);
+       
+       CGContextSetAlpha(uiContext,((float)100 / 100.0f));  
+   
+       CGContextDrawImage(uiContext,rPortraitBorderFrame , img);
+   
+       CGImageRelease(img);  
+              
+       UIImage *finishedImage = UIGraphicsGetImageFromCurrentImageContext();
+                                                            
+       UIGraphicsEndImageContext();
+       
+       imageBorder = [ [ UIImageView alloc ] initWithImage: finishedImage];
+         
+       imageBorder.frame = rPortraitBorderFrame;
+              
+       [self.view addSubview: imageBorder];            
    }    
    
 }
@@ -769,37 +977,115 @@ void* app_Thread_Start(void* args)
    [UIView setAnimationCurve:UIViewAnimationCurveEaseOut];
    [UIView setAnimationDuration:0.50];
 */
+
+   UIImage *image1;
+
    if(controller)
    {
       if(isIpad)
-        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_landscape_iPad.png"]]];
+        image1 = [UIImage imageNamed:[NSString stringWithFormat:@"controller_landscape_iPad.png"]];
       else  
-        imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"controller_landscape_iPhone.png"]]];
+        image1 =  [UIImage imageNamed:[NSString stringWithFormat:@"controller_landscape_iPhone.png"]];
    }   			
    else
    {
       if(isIpad)
-         imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_landscape_iPad.png"]]];
+         image1 = [UIImage imageNamed:[NSString stringWithFormat:@"keyboard_landscape_iPad.png"]];
       else
-         imageView = [ [ UIImageView alloc ] initWithImage:[UIImage imageNamed:[NSString stringWithFormat:@"keyboard_landscape_iPhone.png"]]];
+         image1 = [UIImage imageNamed:[NSString stringWithFormat:@"keyboard_landscape_iPhone.png"]];
    }   
    
-   imageView.frame = rLandscapeImageViewFrame; // Set the frame in which the UIImage should be drawn in.
+   if(scanline_filter_land || tv_filter_land || hide_keyboard)
+   {                                                                                                                                              
+	   UIGraphicsBeginImageContext(rLandscapeImageViewFrame.size);
+	
+	   CGContextRef uiContext = UIGraphicsGetCurrentContext();  
+	   
+	   CGContextTranslateCTM(uiContext, 0, rLandscapeImageViewFrame.size.height);
+		
+	   CGContextScaleCTM(uiContext, 1.0, -1.0);
+	   
+	   if(scanline_filter_land)
+	   {       
+	       
+	      UIImage *image2;
+	      
+	      if(isIpad)
+	        image2 =  [UIImage imageNamed:[NSString stringWithFormat: @"scanline-2.png"]];
+	      else
+	        image2 =  [UIImage imageNamed:[NSString stringWithFormat: @"scanline-1.png"]];
+	                        
+	      CGImageRef tile = CGImageRetain(image2.CGImage);
+	      
+	      if(isIpad)             
+	         CGContextSetAlpha(uiContext,((float)10 / 100.0f));
+	      else
+	         CGContextSetAlpha(uiContext,((float)22 / 100.0f));
+	              
+	      CGContextDrawTiledImage(uiContext, CGRectMake(0, 0, image2.size.width, image2.size.height), tile);
+	       
+	      CGImageRelease(tile);       
+	    }
+	
+	    if(tv_filter_land)
+	    {              
+	       UIImage *image3 = [UIImage imageNamed:[NSString stringWithFormat: @"crt-1.png"]];              
+	          
+	       CGImageRef tile = CGImageRetain(image3.CGImage);
+	              
+	       CGContextSetAlpha(uiContext,((float)20 / 100.0f));     
+	          
+	       CGContextDrawTiledImage(uiContext, CGRectMake(0, 0, image3.size.width, image3.size.height), tile);
+	       
+	       CGImageRelease(tile);       
+	    }
+	       
+	   if(!hide_keyboard)
+	   {
+	      
+		    if(controller)
+		      CGContextSetAlpha(uiContext,((float)iphone_controller_opacity / 100.0f));
+		    else
+		      CGContextSetAlpha(uiContext,((float)iphone_keyboard_opacity / 100.0f));
+		       
+		   //[image1 drawInRect: rLandscapeImageViewFrame];
+		   	   
+		   CGImageRef img = CGImageRetain(image1.CGImage);
+		   
+		   CGContextDrawImage(uiContext,rLandscapeImageViewFrame , img);
+		   
+		   CGImageRelease(img);
+	   }  
+	       
+	    UIImage *finishedImage = UIGraphicsGetImageFromCurrentImageContext();
+	                  
+	    UIGraphicsEndImageContext();
+	    
+	    imageView = [ [ UIImageView alloc ] initWithImage: finishedImage];
+    }
+    else //speedy
+    {
+       imageView = [ [ UIImageView alloc ] initWithImage: image1];
+      
+       if(controller)
+          [imageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
+       else
+          [imageView setAlpha:((float)iphone_keyboard_opacity / 100.0f)];    
+    }
+     
+    imageView.frame = rLandscapeImageViewFrame; // Set the frame in which the UIImage should be drawn in.
+      
+    imageView.userInteractionEnabled = NO;
+    imageView.multipleTouchEnabled = NO;
+    imageView.clearsContextBeforeDrawing = NO;
    
-   
-   imageView.userInteractionEnabled = NO;
-   imageView.multipleTouchEnabled = NO;
-   imageView.clearsContextBeforeDrawing = NO;
-  //[imageView setOpaque:YES];
-   if(controller)
-      [imageView setAlpha:((float)iphone_controller_opacity / 100.0f)];
-   else
-      [imageView setAlpha:((float)iphone_keyboard_opacity / 100.0f)];
-  //TEST CODE
-  //if(!iphone_is_landscape)//remove this line
+    //[imageView setOpaque:YES];
+
+    //TEST CODE
+    //if(!iphone_is_landscape)//remove this line
   
      [self.view addSubview: imageView]; // Draw the image in self.view.
-  //[UIView commitAnimations];
+     //[UIView commitAnimations];
   
   //////////////////
   if(enable_dview)
@@ -826,6 +1112,7 @@ void* app_Thread_Start(void* args)
 - (void)buildLandscape{
 	
    iphone_is_landscape = 1;
+   crop_state = 0;
    [ self getControllerCoords:1 ];
    [ self getKeyboardCoords:1 ];
    __emulation_run = 1;
@@ -844,7 +1131,6 @@ void* app_Thread_Start(void* args)
    [self buildLandscapeImageView];
 	
 }
-
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {	 
@@ -896,11 +1182,11 @@ void* app_Thread_Start(void* args)
 - (void)hideKey {
   if(loop!=nil)
   {
-	 touchTimer = [NSTimer scheduledTimerWithTimeInterval:0.15
+	 touchTimer = [NSTimer scheduledTimerWithTimeInterval:0.10
 												 target:self
-												selector:@selector( handleAction: )
-											    userInfo:nil
-												repeats:NO];    
+												 selector:@selector( handleAction: )
+											     userInfo:nil
+												 repeats:NO];    
    }
 }
 
@@ -1313,6 +1599,8 @@ int lastY = 0;
 			if(hide_keyboard)
 			{
 			    hide_keyboard = 0;
+			   [imageView removeFromSuperview];
+               [imageView release]; 
 			   if(iphone_is_landscape)
                  [self buildLandscapeImageView]; 
                else
@@ -1482,8 +1770,16 @@ int lastY = 0;
 		    else if (MyCGRectContainsPoint(rHideKeyboard, point) || MyCGRectContainsPoint(rHideKeyboard2, point)) {
 		       [self hideKey];
                hide_keyboard = 1;
+               /*
                [imageView removeFromSuperview];
                [imageView release];
+               */
+               [imageView removeFromSuperview];
+               [imageView release];
+               if(iphone_is_landscape)
+                 [self buildLandscapeImageView]; 
+               else
+                 [self buildPortraitImageView];
 			}				
 		}
 		else
@@ -1884,6 +2180,7 @@ int lastY = 0;
   					//[SOApp.delegate switchToBrowse];
   					//[tabBar didMoveToWindow];
 					}
+					
 				}
 			}
 			else if (MyCGRectContainsPoint(rShowKeyboard, point)) {
@@ -2122,16 +2419,25 @@ int lastY = 0;
       i++;
     }
     fclose(fp);
+    
   }
 }
 
 - (void)didReceiveMemoryWarning {
-	[super didReceiveMemoryWarning]; // Releases the view if it doesn't have a superview
+	//[super didReceiveMemoryWarning]; // Releases the view if it doesn't have a superview
 	// Release anything that's not essential, such as cached data
 }
 
 
 - (void)dealloc {
+    if(screenView!=nil)
+       [screenView release];
+       
+    if(imageView!=nil)
+      [imageView release];
+      
+    if(imageBorder!=nil)
+     [imageBorder release];
  
     if(loop!=nil)
 	   [loop release];

@@ -19,6 +19,8 @@
 
 #import "Bootstrapper.h"
 
+int isIpad = 0;
+
 @implementation Bootstrapper
 
 
@@ -26,9 +28,22 @@
 
 	struct CGRect rect = [[UIScreen mainScreen] bounds];
 	rect.origin.x = rect.origin.y = 0.0f;
+	
+	
 
     [[UIApplication sharedApplication] setStatusBarHidden:YES animated:NO];
+    
 	[[UIApplication sharedApplication] setIdleTimerDisabled:YES];//TODO ???
+	
+	BOOL iPad = NO;
+	UIDevice* dev = [UIDevice currentDevice];
+    if ([dev respondsToSelector:@selector(isWildcat)])
+    {
+       iPad = [dev isWildcat];
+    }
+	
+	isIpad = iPad != NO;
+	//isIpad = 1;
 
 	hrViewController = [[NowPlayingController alloc] init];
 	
@@ -43,8 +58,8 @@
 }
 
 -(void)dealloc {
+    [hrViewController release];
 	[window dealloc];
-	//[hrViewController dealloc];
 	[super dealloc];
 }
 

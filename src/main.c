@@ -44,6 +44,10 @@
 #include "zip.h"
 #endif
 
+#ifdef USE_ZLIB
+#include "minizip/unzip.h"
+#endif
+
 #include "bzip/bzlib.h"
 #include "microlib.h"
 
@@ -301,12 +305,13 @@ void load_mconfig()
         fclose(fp);
         read = 1;
     }
-    if (mconfig.id != 0xABCD0018 || !read)
+    if (mconfig.id != 0xABCD0019 || !read)
     {
-        mconfig.id = 0xABCD0018;
+        mconfig.id = 0xABCD0019;
 #if defined(IPHONE)
         mconfig.zx_screen_mode = 0;
         mconfig.frameskip = 1;
+        //mconfig.frameskip = 2;
 #elif defined(ANDROID)
         mconfig.zx_screen_mode = 0;
         mconfig.frameskip = 2;
@@ -814,7 +819,7 @@ void read_list_rom()
                       is_ext(files[nfiles].file,".dsk") ||
                       is_ext(files[nfiles].file,".sav") ||
                       is_ext(files[nfiles].file,".bz2")
-#ifdef USE_ZIP
+#if defined( USE_ZIP) || defined( USE_ZLIB)
                      ||
                      is_ext(files[nfiles].file,".zip")
 #endif
@@ -894,7 +899,7 @@ int load_scr(char *name, char * buffer, int size)
     fp = fopen(name,"rb");
     if (fp == NULL) return 1;
 
-#ifdef USE_ZIP
+#if defined( USE_ZIP) || defined( USE_ZLIB)
     if (is_ext (name, ".zip"))
     {
         zip_load(name); return 0;
@@ -1014,6 +1019,7 @@ int get_rom(int tape)
 {
     static int init = 1;
     static int posfile = 0;
+    int downloads_dir = 1;
     /*unsigned*/ char cad[256];
     int n, m, y, f;
     static int bright = 1;
@@ -1046,7 +1052,14 @@ int get_rom(int tape)
         }
 
         /*speccy_corner();*/
-        sprintf(cad,"PROGRAM LIST (%u)",nfiles-ndirs);
+        downloads_dir = strcasecmp(actual_roms_dir+strlen(actual_roms_dir)-10,"downloads/") == 0 ? 1 : 0;
+
+        if(downloads_dir)
+          sprintf(cad,"DOWNLOADS (%u) (Use A to refresh)",nfiles-ndirs);
+        else
+          sprintf(cad,"PROGRAM LIST (%u)",nfiles-ndirs);
+
+
         v_putcad(1,1,132,cad);
 
         /* Show file screen */
@@ -1213,7 +1226,10 @@ int get_rom(int tape)
         }
 */
 #if  defined(IPHONE) || defined(ANDROID)
-        v_putcad(1,28,132,"Use X to Exit, Use B to Play");
+        if(downloads_dir)
+        	v_putcad(1,28,132,"Use X to Exit, B to Play, Y to delete");
+        else
+            v_putcad(1,28,132,"Use X to Exit, Use B to Play");
 #else
         v_putcad(1,28,132,"Use X to Exit, B to Play, Y to delete");
 #endif
@@ -1274,13 +1290,14 @@ int get_rom(int tape)
             if ( new_key & JOY_BUTTON_Y )
             {
 #if  defined(IPHONE) || defined(ANDROID)
-            	continue;
+            	if(!downloads_dir)
+            	   continue;
 #endif
             	char fname[257];
                 ClearScreen(COLORFONDO);
 
                 COLORFONDO = 128+3;
-                v_putcad((40-34)>>1,10,132,"You really want delete this files?");
+                v_putcad((40-34)>>1,10,132,"You really want delete this file ?");
                 COLORFONDO = 128;
                 sprintf( fname, "%s%s", actual_roms_dir, get_name(files[posfile].file));
                 v_putcad((40-strlen(fname))>>1,12,133,fname);
@@ -1297,6 +1314,28 @@ int get_rom(int tape)
                 else init = 1;
                 if ( posfile >= nfiles ) posfile = nfiles - 1;
             }
+        }
+
+
+        if ( downloads_dir && new_key & JOY_BUTTON_A )
+        {
+        	char fname[257];
+            ClearScreen(COLORFONDO);
+
+            COLORFONDO = 128+3;
+            v_putcad((40-18)>>1,10,132,"Refreshing files");
+            COLORFONDO = 128;
+            v_putcad((40-19)>>1,14,130,"Press B to continue");
+
+            dump_video();
+
+            while(!(nKeys & (JOY_BUTTON_B))) nKeys = joystick_read();
+            while(nKeys & (JOY_BUTTON_B)) nKeys = joystick_read(); // para quieto!!
+
+            read_list_rom();
+            if (nfiles) init = 0;
+            else init = 1;
+            if ( posfile >= nfiles ) posfile = nfiles - 1;
         }
 
         if (new_key & JOY_BUTTON_MENU && !tape)
@@ -1352,7 +1391,7 @@ int get_rom(int tape)
 
         if ((new_key & JOY_BUTTON_L) ) { posfile = 0;}
         if ((new_key & JOY_BUTTON_R) ) { posfile = nfiles - 1; }
-#ifndef ANDROID
+#if !defined(IPHONE) && !defined(ANDROID)
 
         if ((new_key & JOY_BUTTON_LEFT )) { posfile -= 24; if ( posfile < 0       ) posfile = 0;          }
         if ((new_key & JOY_BUTTON_RIGHT)) { posfile += 24; if ( posfile >= nfiles ) posfile = nfiles - 1; }
@@ -1394,11 +1433,11 @@ void credits()
 
 #if defined(IPHONE)
     y = 3;
-    v_putcad((40-38)/2,y,130,"iXpectrum v1.2 by D.Valdeita (Seleuco)");y += 2;
+    v_putcad((40-38)/2,y,130,"iXpectrum v1.3 by D.Valdeita (Seleuco)");y += 2;
     v_putcad((40-33)/2,y,130,"Using some iPhone code from ZodTTD");y += 2;
-    v_putcad((40-32)/2,y,130,"iPad support & test by  Ryosaebaa");y += 3;
+    v_putcad((40-32)/2,y,130,"iPad support & test by Ryosaebaa");y += 3;
 
-    v_putcad((40-32)/2,y,132,"Based on GP2XPectrum 1.9 work of");y += 2;
+    v_putcad((40-35)/2,y,132,"Based on GP2XPectrum 1.9.2 work of:");y += 2;
     v_putcad((40-17)/2,y,132,"Hermes/PS2Reality");y += 2;
     v_putcad((40-33)/2,y,132,"Seleuco & Metalbrain & SplinterGU");y += 2;
     v_putcad((40-14)/2,y,132,"rlyeh / fZX32");y += 2;
@@ -1410,10 +1449,10 @@ void credits()
     v_putcad((40-27)/2,y,132,"and others (thanks for all)");//y += 2;
 #elif defined (ANDROID)
     y = 4;
-    v_putcad((40-40)/2,y,130," Xpectroid v1.1 by D.Valdeita(Seleuco)");y += 2;
+    v_putcad((40-40)/2,y,130," Xpectroid v1.2a by D.Valdeita(Seleuco)");y += 2;
     v_putcad((40-40)/2,y,130,".....................................");y += 3;
 
-    v_putcad((40-32)/2,y,132,"Based on GP2XPectrum 1.9 work of");y += 2;
+    v_putcad((40-35)/2,y,132,"Based on GP2XPectrum 1.9.2 work of:");y += 2;
     v_putcad((40-17)/2,y,132,"Hermes/PS2Reality");y += 2;
     v_putcad((40-33)/2,y,132,"Seleuco & Metalbrain & SplinterGU");y += 2;
     v_putcad((40-14)/2,y,132,"rlyeh / fZX32");y += 2;
@@ -1425,7 +1464,7 @@ void credits()
     v_putcad((40-27)/2,y,132,"and others (thanks for all)");//y += 2;
 #else
     y=1;
-    v_putcad((40-18)/2,y,130,"GP2Xpectrum v1.9");y += 2;
+    v_putcad((40-18)/2,y,130,"GP2Xpectrum v1.9.2");y += 2;
     v_putcad((40-21)/2,y,132,"Based on the work of:");y += 2;
     v_putcad((40-17)/2,y,132,"Hermes/PS2Reality");y += 2;
     v_putcad((40-33)/2,y,132,"Metalbrain & Seleuco & SplinterGU");y += 2;
@@ -2392,7 +2431,7 @@ int Config_SCR()
         }
 
         //opcion 23
-#ifndef ANDROID
+#if !defined(IPHONE) && !defined(ANDROID)
         if (op == 23) COLORFONDO = 129; else COLORFONDO = 128;
         if (mconfig.zx_screen_mode) v_putcad(10, y,130, "Full Screen");
         else v_putcad(10, y,130, "Spectrum Screen");
@@ -2431,13 +2470,13 @@ int Config_SCR()
             else {g += 2;if (g>81) {g = 69; new_key |= JOY_BUTTON_DOWN;}}
         }
         if (new_key & JOY_BUTTON_UP) {op--;if (model != ZX_PLUS3 && op == 11) op = 4; if (model == ZX_PLUS3 && op == 8) op = 4;if (op<0) op = 25;
-#ifdef ANDROID
+#if defined(IPHONE) || defined(ANDROID)
         if(op==23)op--;
 #endif
         }
 
         if (new_key & JOY_BUTTON_DOWN) {op++;if (model != ZX_PLUS3 && op == 5) op = 12; if (model == ZX_PLUS3 && op == 5) op = 9; if (op>25) op = 0;
-#ifdef ANDROID
+#if defined(IPHONE) || defined(ANDROID)
         if(op==23)op++;
 #endif
         }
@@ -2990,6 +3029,197 @@ int display_keyboard()
     return ret;
 }
 
+#ifdef USE_ZLIB
+
+struct zip_files
+{
+    char file[256];
+} zip_files[MAX_ENTRY];
+
+int zip_load(char *name)
+{
+
+    unzFile uf;
+    unz_global_info gi;
+    unz_file_info file_info;
+
+    int n,m,idx;
+    int err;
+
+    uf = unzOpen(name);
+    if(uf == NULL) return -1;
+
+    err = unzGetGlobalInfo (uf,&gi);
+
+    if (err!=UNZ_OK || gi.number_entry<=0 )
+    {
+    	unzClose(uf);
+    	return -2;
+    }
+    m = gi.number_entry;
+    ////seleccionar
+
+    int  zip_pos_file[MAX_ENTRY];
+    int  zip_num_files = 0;
+    int y = 0;
+    char filename_inzip[256];
+
+    for(idx = 0;idx<m;idx++)
+    {
+
+    	err = unzGetCurrentFileInfo(uf,&file_info,&filename_inzip[0],256,NULL,0,NULL,0);
+
+        if (err!=UNZ_OK)
+        {
+            continue;
+        }
+
+        if ((
+
+        	  is_ext(filename_inzip,".z80") ||
+              is_ext(filename_inzip,".sna") ||
+              is_ext(filename_inzip,".tzx") ||
+              is_ext(filename_inzip,".tap") ||
+              is_ext(filename_inzip,".sp")  ||
+              is_ext(filename_inzip,".dsk")
+
+            ))
+        {
+
+        	strcpy(zip_files[zip_num_files].file,&filename_inzip[0]);
+
+            zip_pos_file[zip_num_files] = idx;
+            zip_num_files++;
+        }
+
+        if ((idx+1)<gi.number_entry)
+        {
+            err = unzGoToNextFile(uf);
+            if (err!=UNZ_OK)
+            {
+                break;
+            }
+        }
+    }
+
+    char cad[256];
+    int posfile = 0;
+    unsigned new_key = 0,old_key = 0;
+    int f = 0;
+
+    if (zip_num_files != 1)
+    {
+        COLORFONDO = 128;
+        dump_video();
+        while(nKeys & JOY_BUTTON_B) nKeys = joystick_read(); // para quieto!!
+        while(1)
+        {
+            ClearScreen(COLORFONDO);
+            sprintf(cad,"ZIP LIST (%u)",zip_num_files);
+            v_putcad(0,1,132,cad);
+            m = 0;
+
+            for(n = posfile-10;n<posfile+24;n++)
+            {
+                if (n<0) continue;
+                if (n>= zip_num_files) break;
+                if (m>23) break;
+                if (n == posfile) COLORFONDO = 129; else COLORFONDO = 134;
+                v_breakcad = 38;v_forcebreakcad = 1;
+                v_putcad(1,m+3,130,zip_files[n].file);
+                v_breakcad = 40; v_forcebreakcad = 0;
+                COLORFONDO = 128;
+                m++;
+            }
+
+            for(;m<24;n++)//lo que falta
+            {
+                COLORFONDO = 134;
+                v_breakcad = 38;v_forcebreakcad = 1;
+                v_putcad(1,m+3,130," ");
+                v_breakcad = 40;v_forcebreakcad = 0;
+                COLORFONDO = 128;
+                m++;
+            }
+            v_putcad(1,28,132,"Press B to Select ZIP Entry");
+
+        /*
+            int y = 6;
+            v_putcad(30,y,132,"Press A/X");y += 2;
+            v_putcad(30,y,132,"to Play");y += 2;
+            */
+
+            SyncFreq2();
+            dump_video();
+
+            nKeys = joystick_read();
+            new_key = nKeys & (~old_key);
+            old_key = nKeys;
+
+            if (!(old_key & (JOY_BUTTON_UP | JOY_BUTTON_DOWN))) f = 0;
+            if (old_key & JOY_BUTTON_UP )
+            {
+                if (f == 0) f = 2;
+                else if (f & 1) f = 2;
+                else {f += 2;if (f>40) {f = 34; new_key |= JOY_BUTTON_UP;}}
+            }
+            if (old_key & JOY_BUTTON_DOWN)
+            {
+                if (f == 0) f = 1;
+                else if (!(f & 1)) f = 1;
+                else {f += 2;if (f>41) {f = 35; new_key |= JOY_BUTTON_DOWN;}}
+            }
+
+            if (new_key & JOY_BUTTON_B) break;
+
+            if ((new_key & JOY_BUTTON_L) || (new_key & JOY_BUTTON_LEFT)) {posfile -= 25;if (posfile<0) posfile = 0;}
+            if ((new_key & JOY_BUTTON_R) || (new_key & JOY_BUTTON_RIGHT)) {posfile += 25;if (posfile>= zip_num_files) posfile = zip_num_files-1;}
+
+            if ((new_key & JOY_BUTTON_UP)) {posfile--;if (posfile<0) posfile = zip_num_files-1;}
+            if ((new_key & JOY_BUTTON_DOWN)){posfile++;if (posfile>= zip_num_files) posfile = 0;}
+        }
+    }
+    else
+    {
+        posfile = 0;
+    }
+
+
+
+    if (unzLocateFile(uf,zip_files[posfile].file,0)!=UNZ_OK)
+    {
+    	unzClose(uf);
+    	return -2;
+    }
+
+	err = unzGetCurrentFileInfo(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
+    if (err!=UNZ_OK)
+    {
+    	unzClose(uf);
+    	return -2;
+    }
+
+    GAME_size = file_info.uncompressed_size;
+    err = unzOpenCurrentFile(uf);
+    if (err!=UNZ_OK)
+    {
+         unzClose(uf);
+         return -2;
+    }
+
+    m = 0;
+    while(1)
+    {
+        n = unzReadCurrentFile(uf,GAME+m,GAME_size-m);
+        if (n>0) m += n; else break;
+    }
+    if (n<0 || m != GAME_size) GAME_size = 0;
+
+    unzCloseCurrentFile(uf);
+    unzClose(uf);
+}
+
+#endif
 
 #ifdef USE_ZIP
 
@@ -3160,7 +3390,8 @@ int load_game(char *name)
     fp = fopen(name,"rb");
     if (fp == NULL) return 1;
 
-#ifdef USE_ZIP
+
+#if defined( USE_ZIP) || defined( USE_ZLIB)
     if (is_ext (name, ".zip"))
     {
         zip_load(name); return 0;
@@ -3979,7 +4210,7 @@ int main(int argc, char *argv[])
 
                 int tmp = COLORFONDO; /* if (!full_screen) COLORFONDO = 134; */
                 COLORFONDO = 134;
-#ifdef ANDROID
+#if defined(IPHONE) || defined(ANDROID)
                 v_putcad(4,3,129,result);
 #else
                 v_putcad(0,0,129,result);
@@ -4030,7 +4261,7 @@ int main(int argc, char *argv[])
                 if (fast_edge_loading != 2)
                 {
                    COLORFONDO = 134;
-#ifdef ANDROID
+#if defined(IPHONE) || defined(ANDROID)
                    v_putcad(320/8-9,240/8-5,132,"PLAY");
 #else
                    v_putcad(320/8-5,240/8-2,132,"PLAY");
@@ -4040,7 +4271,7 @@ int main(int argc, char *argv[])
                 {
 
                 	COLORFONDO = 134;
-#ifdef ANDROID
+#if defined(IPHONE) || defined(ANDROID)
                    v_putcad(320/8-9,240/8-5,129,"PLAY");
 #else
                    v_putcad(320/8-5,240/8-2,129,"PLAY");
@@ -4058,7 +4289,7 @@ int main(int argc, char *argv[])
                 int x = full_screen ? 256 : 320;
                 int y = full_screen ? 192 : 240;
                 COLORFONDO = 134;
-#ifdef ANDROID
+#if defined(IPHONE) || defined(ANDROID)
                 v_putcad(x/8-9,y/8-5,131,"STOP");
 #else
                 v_putcad(x/8-5,y/8-2,131,"STOP");

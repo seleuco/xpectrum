@@ -15,6 +15,7 @@ OBJECTS =   IPhone/iph_main.o   \
             IPhone/NowPlayingController.o   \
             IPhone/HelpController.o \
             IPhone/DonateController.o \
+            IPhone/DownloadController.o \
             IPhone/OptionsController.o \
             IPhone/helpers.o   \
             IPhone/MagnifierView.o   \
@@ -29,6 +30,8 @@ OBJECTS =   IPhone/iph_main.o   \
             fdc.o                           \
             snaps.o                         \
             player.o                        \
+                minizip/unzip.o                \
+                minizip/ioapi.o                \
 	        bzip/blocksort.o                \
 	        bzip/huffman.o                  \
 	        bzip/crctable.o                 \
@@ -60,13 +63,13 @@ LDFLAGS += -F$(BASE_DEV)/System/Library/PrivateFrameworks
 lDFLAGS += -L$(BASE_DEV)/usr/lib 
 
 CFLAGS = -march=armv6 -DARM_ARCH -DIPHONE
-CFLAGS += -I. -Icpu -Iincludes
+CFLAGS += -I. -Icpu -Iincludes 
 CFLAGS += -I$(BASE_DEV)/usr/lib/gcc/arm-apple-darwin9/4.0.1/include 
 #CFLAGS += -isysroot $(BASE_DEV)
 #CFLAGS += -O2
 CFLAGS += -O3 -ffast-math 
 #CFLAGS += -DDEBUG_MSG 
-CFLAGS += -DGP2X -DSOUND_X128
+CFLAGS += -DGP2X -DSOUND_X128 -DUSE_ZLIB
 
 all: $(BUILD_APP)
 
