@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- www.Ulrich-Scheller.de - use this script/project for whatever you want on your own risk -->
+
+<project name="myproject" default="myproject" basedir=".">
+	<description>
+        switch between different targets
+    </description>
+
+	<!-- set global properties for this build -->
+	<property name="src" location="src"/>
+	<property name="res" location="res"/>
+	<property name="myres" location="res_base"/>
+
+	<target name="myproject" description="delete current res and put in the defaults" >
+		
+		<delete dir="${res}" />
+		<copydir dest="${res}" src="${myres}/default" />
+	
+		<!-- change the import in all Java source files -->
+		<replaceregexp flags="g" byline="false">
+		    <regexp pattern="import com.seleuco.xpectrum_(.*).R;" /> 
+		    <substitution expression="import com.seleuco.xpectrum.R;" />
+		    <fileset dir="src" includes="**/*.java" /> 
+		</replaceregexp>
+		<!-- change the package name in AndroidManifest -->
+		<replaceregexp flags="g" byline="false">
+		    <regexp pattern="package=&quot;com.seleuco.xpectrum_(.*)&quot;" /> 
+		    <substitution expression="package=&quot;com.seleuco.xpectrum&quot;" />
+		    <fileset dir="" includes="AndroidManifest.xml" /> 
+		</replaceregexp>
+	</target>
+	
+	<target name="LITE" depends="myproject" description="exchange resources and change the package name" >
+
+		<copydir dest="${res}" src="${myres}/lite" forceoverwrite="true" />
+		
+		<replaceregexp flags="g" byline="false">
+		    <regexp pattern="import com.seleuco.xpectrum.R;" /> 
+		    <substitution expression="import com.seleuco.xpectrum_lite.R;" />
+		    <fileset dir="src" includes="**/*.java" /> 
+		</replaceregexp>
+		
+		<replaceregexp flags="g" byline="false">
+		    <regexp pattern="package=&quot;com.seleuco.xpectrum&quot;" /> 
+		    <substitution expression="package=&quot;com.seleuco.xpectrum_lite&quot;" />
+		    <fileset dir="" includes="AndroidManifest.xml" /> 
+		</replaceregexp>
+		
+	</target>
+</project>
