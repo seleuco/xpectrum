@@ -18,6 +18,7 @@
 */
 
 #import "OptionsController.h"
+#import "helpers.h"
 #include <stdio.h>
 
 extern int isIpad;
@@ -49,7 +50,7 @@ extern int isIpad;
 
 - (void)loadOptions
 {
-	NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/options_v22.bin";
+	NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/saves/options_v3.bin";
 	
 	NSData *plistData;
 	id plist;
@@ -75,7 +76,13 @@ extern int isIpad;
 		keepAspectRatio=isIpad?0:1;
 		smoothedPort=isIpad?1:0;
 		smoothedLand=isIpad?1:0;
-		safeRenderPath = isIpad?1:0;
+		
+		
+		safeRenderPath = ![[Helper machine] isEqualToString: @"iPhone1,1"] 
+		              && ![[Helper machine] isEqualToString: @"iPhone1,2"] 
+		              && ![[Helper machine] isEqualToString: @"iPod1,1"];
+		
+		//safeRenderPath = isIpad?1:0;
 		
 		tvFilterPort = 0;
         tvFilterLand = 0;
@@ -131,7 +138,7 @@ extern int isIpad;
 							 nil]];	
 
 	
-    NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/options_v22.bin";
+    NSString *path= @"/var/mobile/Media/ROMs/iXpectrum/saves/options_v3.bin";
 	NSData *plistData;
 	
 	NSString *error;
@@ -141,11 +148,25 @@ extern int isIpad;
 										     errorDescription:&error];	
 	if(plistData)		
 	{
-		[plistData writeToFile:path atomically:NO];		
+	   NSError*err;
+	
+		BOOL b = [plistData writeToFile:path atomically:NO];
+		//BOOL b = [plistData writeToFile:path options:0  error:&err];
+		if(!b)
+		{
+			    UIAlertView *errAlert = [[UIAlertView alloc] initWithTitle:@"Error saving preferences!" 
+															message://[NSString stringWithFormat:@"Error:%@",[err localizedDescription]]  
+															@"Preferences couldn't be saved.\n Check for write permissions on '/var/mobile/Media/ROMs/iXpectrum/saves/'. chmod 777 if needed. See help." 
+															delegate:self 
+													        cancelButtonTitle:@"OK" 
+													        otherButtonTitles: nil];	
+	           [errAlert show];
+	           [errAlert release];
+		}		
 	}
 	else
 	{
-	
+
 		NSLog(error);		
 		[error release];		
 	}	

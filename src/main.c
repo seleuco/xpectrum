@@ -150,6 +150,20 @@ unsigned char mypalette_rgb[7][3] = {
     {0x00,0x00,0x00}, // 134 = 6 = black
 };
 
+int fexits(char *name){
+
+    FILE *fp = fopen(name,"r");
+    if (fp == 0)
+    {
+    	return 0;
+    }
+    else
+    {
+    	fclose(fp);
+    	return 1;
+    }
+}
+
 void set_emupalette()
 {
     int i;
@@ -1020,6 +1034,7 @@ int get_rom(int tape)
     static int init = 1;
     static int posfile = 0;
     int downloads_dir = 1;
+    int saves_dir = 1;
     /*unsigned*/ char cad[256];
     int n, m, y, f;
     static int bright = 1;
@@ -1053,9 +1068,12 @@ int get_rom(int tape)
 
         /*speccy_corner();*/
         downloads_dir = strcasecmp(actual_roms_dir+strlen(actual_roms_dir)-10,"downloads/") == 0 ? 1 : 0;
+        saves_dir = strcasecmp(actual_roms_dir+strlen(actual_roms_dir)-6,"saves/") == 0 ? 1 : 0;
 
         if(downloads_dir)
           sprintf(cad,"DOWNLOADS (%u) (Use A to refresh)",nfiles-ndirs);
+        else if(saves_dir)
+          sprintf(cad,"SAVES (%u)",nfiles-ndirs);
         else
           sprintf(cad,"PROGRAM LIST (%u)",nfiles-ndirs);
 
@@ -1226,7 +1244,7 @@ int get_rom(int tape)
         }
 */
 #if  defined(IPHONE) || defined(ANDROID)
-        if(downloads_dir)
+        if(downloads_dir || saves_dir)
         	v_putcad(1,28,132,"Use X to Exit, B to Play, Y to delete");
         else
             v_putcad(1,28,132,"Use X to Exit, Use B to Play");
@@ -1290,7 +1308,7 @@ int get_rom(int tape)
             if ( new_key & JOY_BUTTON_Y )
             {
 #if  defined(IPHONE) || defined(ANDROID)
-            	if(!downloads_dir)
+            	if(!(downloads_dir || saves_dir))
             	   continue;
 #endif
             	char fname[257];
@@ -1433,7 +1451,7 @@ void credits()
 
 #if defined(IPHONE)
     y = 3;
-    v_putcad((40-38)/2,y,130,"iXpectrum v1.3 by D.Valdeita (Seleuco)");y += 2;
+    v_putcad((40-38)/2,y,130,"iXpectrum v1.3.1 by D.Valdeita(Seleuco)");y += 2;
     v_putcad((40-33)/2,y,130,"Using some iPhone code from ZodTTD");y += 2;
     v_putcad((40-32)/2,y,130,"iPad support & test by Ryosaebaa");y += 3;
 
@@ -2976,7 +2994,9 @@ int display_keyboard()
                     nmultikey = 0;
                 }
                 if (curx == 4) {
+                	emulating = 0;
                     tape_browser();
+                    emulating = 1;
                     keyboard_on = 0;
                 }
             }
@@ -3787,8 +3807,18 @@ tape_browser()
             // obten nombre sin extension
             n = 0;while(mname[n] != 0) n++;
             while(n>0) {if (mname[n] == '.') {mname[n] = 0;break;} n--;}
-			    sprintf(photo_name,"%s/saves/%s.key",globalpath,mname);
-            read_keyfile(photo_name);
+
+            sprintf(photo_name,"%s/%s.key",globalpath,mname);
+            if(fexits(photo_name))
+            {
+               read_keyfile(photo_name);
+            }
+            else
+            {
+			   sprintf(photo_name,"%s/saves/%s.key",globalpath,mname);
+               read_keyfile(photo_name);
+            }
+
             ZX_LoadGame(-1,0,0);
             while(nKeys & (JOY_BUTTON_B | JOY_BUTTON_X)) nKeys = joystick_read(); // para quieto!!
             num_entries = tape_blocks_entries(block_entries,38);
@@ -4079,8 +4109,17 @@ int main(int argc, char *argv[])
                     }
                     n--;
                 }
-		        sprintf(photo_name,"%s/saves/%s.key",globalpath,mname);
-                read_keyfile(photo_name);
+
+                sprintf(photo_name,"%s/%s.key",globalpath,mname);
+                if(fexits(photo_name))
+                {
+                   read_keyfile(photo_name);
+                }
+                else
+                {
+    			   sprintf(photo_name,"%s/saves/%s.key",globalpath,mname);
+                   read_keyfile(photo_name);
+                }
             }
         }
 

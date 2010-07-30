@@ -356,7 +356,18 @@ extern int iphone_menu;
 }
 - (void)connectionDidFinishLoading:(NSURLConnection *)conn
 {
-   [payload writeToFile: [NSString stringWithFormat:@"/var/mobile/Media/ROMs/iXpectrum/downloads/%@", [[[dRequest URL] path] lastPathComponent]] atomically:NO];
+   BOOL b = [payload writeToFile: [NSString stringWithFormat:@"/var/mobile/Media/ROMs/iXpectrum/downloads/%@", [[[dRequest URL] path] lastPathComponent]] atomically:NO];
+   
+   if(!b)
+   {
+   			    UIAlertView *errAlert = [[UIAlertView alloc] initWithTitle:@"Error saving download!" 
+															message:@"Download couldn't be saved.\n Check for write permissions on '/var/mobile/Media/ROMs/iXpectrum/downloads/'. chmod 777 if needed. See help." 
+															delegate:self 
+													        cancelButtonTitle:@"OK" 
+													        otherButtonTitles: nil];	
+	           [errAlert show];
+	           [errAlert release];
+   }           
     
    [dRequest release];
    

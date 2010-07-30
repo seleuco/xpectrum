@@ -1,4 +1,4 @@
-iXpectrum v1.3 for Jailbroken iPhone, iPad & iPod Touch by David Valdeita (Seleuco)
+iXpectrum v1.3.1 for Jailbroken iPhone, iPad & iPod Touch by David Valdeita (Seleuco)
 
 Based in gp2xpectrum by Hermes/PS2Reality and continued by Metalbrain & Seleuco.
 
@@ -15,6 +15,14 @@ If you wish to colaborate, get the source code or port to another platform, take
 http://code.google.com/p/xpectrum/
 
 Also consider make a donation if you liked the emulator, so i can improve it.
+
+New in 1.3.1
+
+- Saves & downloads folders are now created by code. Should fix permissions issues with download browser and preferences saving. 
+  ( Remove these folders if update not does)
+- Safe render path selected by default except iPhone 2G & 3G iPod 1st Gen.
+- Added delete file option on saves folder.
+- Fixed crop bug when open tape browser from virtual keyboard.
 
 New in 1.3 (World Champion Edition)
 
@@ -92,6 +100,8 @@ there is also included the following games from the spanish's scene created by m
 
 -Lala Prologue
 
+-Sir Ababol
+
 -Moggy-Adventure
 
 -Cheril of the Bosque
@@ -113,6 +123,13 @@ there is also included the following games from the spanish's scene created by m
 The Emulator also includes some slideshows showing the Ula+64 working (take a look at the c64 slideshow thanks to Tom Cat. It looks great), and some ula+64 palettes that you can load before a game to change its colours.
 
 also is included Ghost Castle game thanks to CodenameV
+
+FAQ
+---
+
+* Game don't load or fail loading: If you want to load a game in high compability mode, or just as original spectrum did, disable Fast & Flash & Edge loading. If you still have problems loading the game, remember to reset to 48k mode.
+* How I should load and play a game?: Usually select game pressing B, then X to begin load... in game, select joystick kempston if avalible.
+* How I fix permissions issues: reinstall, if not, use winscp and set permissions 0777 to iXpectrum and ROMs folders. Search in web for more detail.
 
 INSTALLING
 ----------
