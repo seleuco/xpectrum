@@ -18,6 +18,8 @@
 */
 
 #import "Bootstrapper.h"
+#import "helpers.h"
+#include <stdio.h>
 
 int isIpad = 0;
 
@@ -29,12 +31,15 @@ int isIpad = 0;
 	struct CGRect rect = [[UIScreen mainScreen] bounds];
 	rect.origin.x = rect.origin.y = 0.0f;
 	
+	//printf("Machine: '%s'\n",[[Helper machine] UTF8String]) ;
 	
+	mkdir("/var/mobile/Media/ROMs/iXpectrum/downloads", 0755);
+	mkdir("/var/mobile/Media/ROMs/iXpectrum/saves", 0755);
 
     [[UIApplication sharedApplication] setStatusBarHidden:YES animated:NO];
     
 	[[UIApplication sharedApplication] setIdleTimerDisabled:YES];//TODO ???
-	
+	/*
 	BOOL iPad = NO;
 	UIDevice* dev = [UIDevice currentDevice];
     if ([dev respondsToSelector:@selector(isWildcat)])
@@ -43,6 +48,9 @@ int isIpad = 0;
     }
 	
 	isIpad = iPad != NO;
+	*/
+	
+	isIpad = [[Helper machine] rangeOfString:@"iPad"].location != NSNotFound;
 	//isIpad = 1;
 
 	hrViewController = [[NowPlayingController alloc] init];

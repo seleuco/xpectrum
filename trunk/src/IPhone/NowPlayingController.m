@@ -88,7 +88,6 @@ extern float __audioVolume;
 extern unsigned short BaseAddress[240*160];
 extern unsigned long gp2x_pad_status;
 extern int __emulation_run;
-extern int __emulation_paused;
 
 extern pthread_t main_tid;
 
@@ -236,7 +235,7 @@ void* app_Thread_Start(void* args)
        if(emulating && crop_state==0)
        {
            float factor = isIpad ? 1.20f : 1.15f;
-           CGRect r = sharedInstance.frame;
+           CGRect r = self.frame;
            
            int oldw = r.size.width;          
            r.size.width = r.size.width * factor;
@@ -246,7 +245,7 @@ void* app_Thread_Start(void* args)
 		   r.size.height = r.size.height * factor;
            r.origin.y  = r.origin.y  - ((r.size.height - oldh)/2);
                       
-           sharedInstance.frame = r;
+           self.frame = r;
            crop_state=1;
     
        }
@@ -326,7 +325,7 @@ void* app_Thread_Start(void* args)
       CFRelease(_screenSurface);
       //CoreSurfaceBufferUnlock(_screenSurface);
        _screenSurface = nil;
-       self.contents = nil;
+      // self.contents = nil;
     }
     
     [super dealloc];
@@ -663,7 +662,7 @@ void* app_Thread_Start(void* args)
     iphone_smooth_land = [op smoothedLand];
     iphone_smooth_port = [op smoothedPort];
     safe_render_path = [op safeRenderPath];
-        
+            
     crop_border_land = [op cropBorderLand];
     crop_border_port = [op cropBorderPort];
         
@@ -777,7 +776,7 @@ void* app_Thread_Start(void* args)
    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
    
   __emulation_paused = 1;
-  usleep(100000);//ensure some frames displayed
+  usleep(150000);//ensure some frames displayed
 
         
   [screenView removeFromSuperview];

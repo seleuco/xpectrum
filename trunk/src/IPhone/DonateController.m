@@ -107,9 +107,11 @@ extern iphone_menu;
 
 }
 
+
 -(void)mydone:(id)sender{
-   [aWebView setDelegate:nil];
-   [aWebView stopLoading]; 
+   //[aWebView setDelegate:nil];
+    if ([aWebView isLoading])
+        [aWebView stopLoading];
    [self dismissModalViewControllerAnimated:YES];
    iphone_menu = 0; 
 }
@@ -131,15 +133,22 @@ extern iphone_menu;
 
 - (void)webViewDidStartLoad:(UIWebView *)webView{
     //[navBar topItem].title = webView.request.URL.absoluteString;
+     //[self retain];    
+}
+
+- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType{
+    if(navBar!=nil && [navBar topItem]!= nil)
+      [navBar topItem].title = @"Wait... Loading!";
+   return YES;
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error{
     if(navBar!=nil && [navBar topItem]!= nil)
       [navBar topItem].title = @"Error";
-    if(error!=nil)
+    if(error!=nil && error.code != NSURLErrorCancelled)
     {
 		UIAlertView *connectionAlert = [[UIAlertView alloc] initWithTitle:@"Connection Failed!" 
-																  message:[NSString stringWithFormat:@"There is no internet connection. Connect to the internet and try again.",[error localizedDescription]] 
+																  message:[NSString stringWithFormat:@"There is no internet connection. Connect to the internet and try again. Error:%@",[error localizedDescription]] 
 																 delegate:self 
 														cancelButtonTitle:@"OK" 
 														otherButtonTitles: nil];
@@ -147,13 +156,8 @@ extern iphone_menu;
 		[connectionAlert show];
 		[connectionAlert release];
 	}
-
-}
-
-- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType{
-    if(navBar!=nil && [navBar topItem]!= nil)
-      [navBar topItem].title = @"Wait... Loading!";
-   return YES;
+    //[self release];
+    
 }
 
 - (void)webViewDidFinishLoad:(UIWebView *)webView{
@@ -163,6 +167,7 @@ extern iphone_menu;
        if([navBar topItem]!= nil && webView.request!=nil)
          [navBar topItem].title = webView.request.URL.absoluteString;
    }  
+   //[self release];   
 }
 
 
