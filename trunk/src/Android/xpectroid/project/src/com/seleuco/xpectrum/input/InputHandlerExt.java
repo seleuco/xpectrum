@@ -261,7 +261,20 @@ public class InputHandlerExt extends InputHandler {
 
 		int action = event.getAction();
 		int actionEvent = action & MotionEvent.ACTION_MASK;
-		int pid = action >> MotionEvent.ACTION_POINTER_ID_SHIFT;
+		//int pid = action >> MotionEvent.ACTION_POINTER_ID_SHIFT;
+		
+		int pid = 0;
+		
+        try
+        {
+		   int pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+           pid = event.getPointerId(pointerIndex);
+        }
+        catch(Error e)
+        {
+            pid = (action & MotionEvent.ACTION_POINTER_ID_SHIFT) >> MotionEvent.ACTION_POINTER_ID_SHIFT;
+        }    
+		
 				
 		for (int i = 0; i < 10; i++) 
 		{

@@ -29,8 +29,8 @@ LOCAL_PATH := /home/david/Projects/iphone/toolchain/apps/iXpectrum
 
 MY_SOURCE_PATH := /home/david/Projects/iphone/toolchain/apps/iXpectrum
 LOCAL_MODULE    := xpectrum
-LOCAL_CFLAGS    := -DANDROID -DGP2X -DSOUND_X128 -O3 -ffast-math
-LOCAL_LDLIBS    := -ldl -lc -llog -lgcc -lm 
+LOCAL_CFLAGS    := -DANDROID -DGP2X -DSOUND_X128 -O3 -ffast-math -DUSE_ZLIB
+LOCAL_LDLIBS    := -ldl -lc -llog -lgcc -lm -lz 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/ 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/cpu
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/includes 
@@ -44,6 +44,8 @@ LOCAL_SRC_FILES :=  main.c                  \
             fdc.c                           \
             snaps.c                         \
             player.c                        \
+            minizip/unzip.c                 \
+            minizip/ioapi.c                 \
 	    bzip/blocksort.c                \
 	    bzip/huffman.c                  \
 	    bzip/crctable.c                 \
