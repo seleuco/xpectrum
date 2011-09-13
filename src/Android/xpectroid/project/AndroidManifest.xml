@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="com.seleuco.xpectrum"
-      android:installLocation="auto" android:versionCode="3" android:versionName="1.2">
+      android:installLocation="auto" android:versionName="1.2.1" android:versionCode="4">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="false" android:allowClearUserData="true">
         <activity android:name="com.seleuco.xpectrum.Xpectroid"
                   android:label="@string/app_name"
