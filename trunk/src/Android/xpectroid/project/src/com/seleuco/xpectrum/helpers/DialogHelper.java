@@ -30,6 +30,8 @@ public class DialogHelper {
 	public final static int DIALOG_EXIT = 1;
 	public final static int DIALOG_ERROR = 2;
 	public final static int DIALOG_INFO = 3;
+	public final static int DIALOG_THANKS = 6;
+	public final static int DIALOG_FULLSCREEN = 7;	
 	
 	protected Xpectroid xoid = null;
 	
@@ -85,6 +87,17 @@ public class DialogHelper {
 	    	       .setCancelable(false)
 	    	       .setPositiveButton("OK", new DialogInterface.OnClickListener() {
 	    	           public void onClick(DialogInterface dialog, int id) {
+	    	           }
+	    	       });
+
+	    	 dialog = builder.create();
+	         break;
+	    case DIALOG_THANKS:
+	    	builder.setMessage("All my projects come to you free of charge and ad-free, because that's how i like my work to be, but if you want to thank me for my effort or colaborate in future developments, feel free to support my projects.")
+	    	       .setCancelable(false)
+	    	       .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+	    	           public void onClick(DialogInterface dialog, int id) {
+	    	        	   xoid.getMainHelper().showDonate();
 	    	           }
 	    	       });
 

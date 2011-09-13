@@ -55,7 +55,9 @@ public class MenuHelper {
 	
 
 		switch (item.getItemId()) {
-
+		case (R.id.menu_donate_option):
+			xoid.showDialog(DialogHelper.DIALOG_THANKS);
+			return true;
 		case (R.id.menu_quit_option):
 			xoid.showDialog(DialogHelper.DIALOG_EXIT);
 			return true;
